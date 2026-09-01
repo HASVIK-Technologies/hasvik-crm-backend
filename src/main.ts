@@ -2,10 +2,23 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import * as bodyParser from 'body-parser';
+import express, { Express } from 'express';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+let cachedApp: Express | null = null;
+
+async function bootstrap(): Promise<Express> {
+  if (cachedApp) {
+    return cachedApp;
+  }
+
+  const expressApp = express();
+
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(expressApp),
+  );
 
   const bodyLimit = process.env.BODY_LIMIT || '20mb';
 
@@ -21,19 +34,19 @@ async function bootstrap() {
     }),
   );
 
-  // CORS configuration
-  const allowedOrigins = process.env.ALLOW_ORIGIN ? process.env.ALLOW_ORIGIN.split(',') : [];
+  const allowedOrigins = process.env.ALLOW_ORIGIN
+    ? process.env.ALLOW_ORIGIN.split(',')
+    : [];
+
   if (allowedOrigins.length > 0) {
     app.enableCors({
       origin: allowedOrigins,
       credentials: true,
     });
   } else {
-    //Allow all origins for development purposes
     app.enableCors();
   }
 
-  // Global API prefix
   app.setGlobalPrefix('api');
 
   const config = new DocumentBuilder()
@@ -47,6 +60,14 @@ async function bootstrap() {
 
   SwaggerModule.setup('swagger', app, document);
 
-  await app.listen(process.env.PORT || 4000, '0.0.0.0');
+  await app.init();
+
+  cachedApp = expressApp;
+
+  return cachedApp;
 }
-bootstrap();
+
+export default async function handler(req: any, res: any) {
+  const app = await bootstrap();
+  app(req, res);
+}
