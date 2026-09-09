@@ -10,7 +10,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   FollowUpStatus,
   FollowUpType,
-} from '../../mongo/interfaces';
+} from '../../mongo/enums';
 
 export class FollowUpFilterDto {
   @ApiPropertyOptional({

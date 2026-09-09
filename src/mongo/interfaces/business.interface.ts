@@ -19,6 +19,7 @@ export enum BusinessType {
 
 export interface ContactNumber {
   number: string;
+  name?: string
   isPrimary: boolean;
 }
 

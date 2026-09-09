@@ -5,12 +5,13 @@ import {
 import { isObjectIdOrHexString } from 'mongoose';
 
 import { MongoService } from '../mongo/mongo.service';
-import { FollowUp, FollowUpStatus } from 'src/mongo/interfaces/follow-up.interface';
+import { FollowUp,  } from '../mongo/interfaces';
 
 
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
 import { FollowUpFilterDto } from './dto/get-follow-up-filter.dto';
+import { NoteEntityType } from '../mongo/enums';
 
 @Injectable()
 export class FollowUpService {
@@ -53,15 +54,15 @@ export class FollowUpService {
       isDeleted: false,
     });
 
-    // if (!user) {
-    //   throw new NotFoundException(
-    //     'Assigned user not found.',
-    //   );
-    // }
+    // to-do: Once user implementation is done, uncomment the code
+    if (false && !user) {
+      throw new NotFoundException('Assigned user not found.');
+    }
 
+    // Create follow-up
     const followUp = new this.mongo.models.followUp({
       ...data,
-      createdBy: "6a8f52467269f2cb3f23f0e1",
+      createdBy: userId,
     });
 
     return await followUp.save();
@@ -70,7 +71,7 @@ export class FollowUpService {
   // GET FOLLOW-UP BY ID
   async findById(
     id: string,
-  ): Promise<FollowUp> {
+  ): Promise<FollowUp & { notes: any[] }> {
     if (!isObjectIdOrHexString(id)) {
       throw new NotFoundException(
         'Invalid follow-up id.',
@@ -88,7 +89,21 @@ export class FollowUpService {
       );
     }
 
-    return followUp as FollowUp;
+    const notes = await this.mongo.models.note
+      .find({
+        entityType: NoteEntityType.FOLLOW_UP,
+        entityId: followUp._id,
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .lean()
+      .exec();
+
+    return {
+      ...followUp,
+      notes,
+    } as FollowUp & { notes: any[] };
   }
 
   // GET ALL FOLLOW-UPS

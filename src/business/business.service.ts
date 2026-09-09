@@ -18,7 +18,7 @@ export class BusinessService {
   ) {}
 
   // CREATE BUSINESS
-  async create(data: CreateBusinessDto): Promise<Business> {
+  async create(data: CreateBusinessDto, userId: string): Promise<Business> {
     const existingBusiness = await this.mongo.models.business.findOne({
       name: data.name,
       city: data.city,
@@ -31,7 +31,10 @@ export class BusinessService {
       );
     }
 
-    const business = new this.mongo.models.business(data);
+    const business = new this.mongo.models.business({
+      ...data,
+      createdBy: userId,
+    });
 
     return await business.save();
   }
@@ -61,6 +64,7 @@ export class BusinessService {
   async update(
     id: string,
     dto: UpdateBusinessDto,
+    userId: string,
   ): Promise<Business> {
     if (!isObjectIdOrHexString(id)) {
       throw new NotFoundException('Invalid business id.');
@@ -72,7 +76,10 @@ export class BusinessService {
           _id: id,
           isDeleted: false,
         },
-        dto,
+        {
+          ...dto,
+          updatedBy: userId,
+        },
         {
           new: true,
           runValidators: true,
@@ -88,7 +95,7 @@ export class BusinessService {
   }
 
   // DELETE BUSINESS
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
     if (!isObjectIdOrHexString(id)) {
       throw new NotFoundException('Invalid business id.');
     }

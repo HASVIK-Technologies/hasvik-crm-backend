@@ -25,6 +25,13 @@ export class ContactNumberDto {
   @IsString()
   number!: string;
 
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'Name of the contact person',
+  })
+  @IsString()
+  name?: string;
+
   @ApiPropertyOptional({
     example: true,
     default: false,
@@ -73,10 +80,12 @@ export class CreateBusinessDto {
     example: [
       {
         number: '9876543210',
+        name: 'Hasvik',
         isPrimary: true,
       },
       {
         number: '9123456780',
+        name: 'Hasvik',
         isPrimary: false,
       },
     ],
@@ -93,6 +102,7 @@ export class CreateBusinessDto {
     example: [
       {
         number: '9876543210',
+        name: 'Hasvik',
         isPrimary: true,
       },
     ],

@@ -5,8 +5,8 @@ import {
   UserDocument,
   UserSchema,
 } from './schemas/user.schema';
-import { BusinessSchema,FollowUpSchema } from './schemas';
-import type { Business, FollowUp,  } from './interfaces';
+import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema } from './schemas';
+import type { Business, Category, FollowUp, Note } from './interfaces';
 
 type SchemaDefinition = {
   key: string;
@@ -30,6 +30,16 @@ const SCHEMAS: SchemaDefinition[] = [
     name: 'FollowUp',
     schema: FollowUpSchema,
   },
+  {
+    key: 'category',
+    name: 'Category',
+    schema: CategorySchema,
+  },
+  {
+    key: 'note',
+    name: 'Note',
+    schema: NoteSchema,
+  },
   // {
   //   key: 'booking',
   //   name: Booking.name,
@@ -42,7 +52,9 @@ export class MongoModels {
   readonly user!: Model<UserDocument>;
   readonly business!: Model<Business>;
   readonly followUp!: Model<FollowUp>;
-
+  readonly category!: Model<Category>;
+  readonly note!: Model<Note>;
+  
   constructor() {
     for (const item of SCHEMAS) {
       (this as any)[item.key] =

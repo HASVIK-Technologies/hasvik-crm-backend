@@ -1,19 +1,6 @@
 import { Types } from 'mongoose';
+import {FollowUpType,FollowUpStatus } from '../enums'
 
-export enum FollowUpStatus {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  MISSED = 'MISSED',
-}
-
-export enum FollowUpType {
-  CALL = 'CALL',
-  WHATSAPP = 'WHATSAPP',
-  EMAIL = 'EMAIL',
-  MEETING = 'MEETING',
-  OTHER = 'OTHER',
-}
 export interface FollowUp {
   _id: Types.ObjectId;
 
@@ -26,8 +13,6 @@ export interface FollowUp {
   scheduledAt: Date;
 
   status: FollowUpStatus;
-
-  notes?: string;
 
   completedAt?: Date;
 

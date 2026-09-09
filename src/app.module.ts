@@ -6,6 +6,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { BusinessModule } from './business/business.module';
 import { FollowupModule } from './followup/followup.module';
+import { CategoryModule } from './category/category.module';
+import { NoteModule } from './note/note.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { FollowupModule } from './followup/followup.module';
     UsersModule,
     BusinessModule,
     FollowupModule,
+    CategoryModule,
+    NoteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

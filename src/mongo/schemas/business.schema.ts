@@ -1,14 +1,16 @@
 import { Schema, Types } from 'mongoose';
 import { BusinessStatus, BusinessType, Business, ContactNumber } from '../interfaces';
 
-const ContactNumberSchema: Schema<ContactNumber> = new Schema(
+const ContactNumberSchema: Schema<ContactNumber> = new Schema<ContactNumber>(
   {
     number: {
       type: String,
       required: true,
       trim: true,
     },
-
+    name: {
+      type: String
+    },
     isPrimary: {
       type: Boolean,
       default: false,
@@ -19,7 +21,7 @@ const ContactNumberSchema: Schema<ContactNumber> = new Schema(
   },
 );
 
-export const BusinessSchema: Schema<Business> = new Schema(
+export const BusinessSchema: Schema<Business> = new Schema<Business>(
   {
     name: {
       type: String,
@@ -33,6 +35,7 @@ export const BusinessSchema: Schema<Business> = new Schema(
     categoryId: {
       type: Types.ObjectId,
       ref: 'Category',
+      default: null,
       index: true,
     },
 

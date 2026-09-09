@@ -22,7 +22,10 @@ export class BusinessController {
 
   @Post()
   create(@Body() dto: CreateBusinessDto) {
-    return this.businessService.create(dto);
+    // Replace with authenticated user ID
+    const userId = '6a8f3be16f9d9afdbc79974f';
+
+    return this.businessService.create(dto, userId);
   }
 
   @Get()
@@ -54,11 +57,17 @@ export class BusinessController {
     @Param('id') id: string,
     @Body() dto: UpdateBusinessDto,
   ) {
-    return this.businessService.update(id, dto);
+    // Replace with authenticated user ID
+    const userId = '6a8f3be16f9d9afdbc79974f';
+    
+    return this.businessService.update(id, dto, userId);
   }
 
   @Delete(':id')
   delete(@Param('id') id: string) {
-    return this.businessService.delete(id);
+    // Replace with authenticated user ID
+    const userId = '6a8f3be16f9d9afdbc79974f';
+
+    return this.businessService.delete(id, userId);
   }
 }

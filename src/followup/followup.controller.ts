@@ -42,7 +42,7 @@ export class FollowUpController {
     @Body() dto: CreateFollowUpDto,
   ) {
     // Replace with authenticated user ID
-    const userId = 'CURRENT_USER_ID';
+    const userId = '6a8f3be16f9d9afdbc79974f';
 
     return this.followUpService.create(
       dto,

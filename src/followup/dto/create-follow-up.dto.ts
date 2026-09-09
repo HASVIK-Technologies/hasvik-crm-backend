@@ -6,7 +6,7 @@ import {
   IsString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FollowUpStatus, FollowUpType } from 'src/mongo/interfaces';
+import { FollowUpStatus, FollowUpType } from 'src/mongo/enums';
 
 
 export class CreateFollowUpDto {

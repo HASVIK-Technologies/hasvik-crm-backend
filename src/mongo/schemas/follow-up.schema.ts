@@ -1,7 +1,8 @@
 import { Schema, Types } from 'mongoose';
-import { FollowUp, FollowUpStatus, FollowUpType } from '../interfaces';
+import { FollowUp } from '../interfaces';
+import {FollowUpType,FollowUpStatus } from '../enums'
 
-export const FollowUpSchema: Schema<FollowUp> = new Schema(
+export const FollowUpSchema: Schema<FollowUp> = new Schema<FollowUp>(
   {
     businessId: {
       type: Types.ObjectId,
@@ -35,11 +36,6 @@ export const FollowUpSchema: Schema<FollowUp> = new Schema(
       enum: Object.values(FollowUpStatus),
       default: FollowUpStatus.PENDING,
       index: true,
-    },
-
-    notes: {
-      type: String,
-      trim: true,
     },
 
     completedAt: {
