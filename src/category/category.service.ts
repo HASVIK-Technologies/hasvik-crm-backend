@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
@@ -14,6 +15,8 @@ import { CategoryFilterDto } from './dto/category-filter.dto';
 
 @Injectable()
 export class CategoryService {
+  private readonly logger = new Logger(CategoryService.name);
+
   constructor(private readonly mongo: MongoService) {}
 
   /**
@@ -23,21 +26,30 @@ export class CategoryService {
     dto: CreateCategoryDto,
     userId: string,
   ): Promise<Category> {
-    const existingCategory = await this.mongo.models.category
-      .findOne({
-        name: dto.name,
-      })
-      .lean()
-      .exec();
+    this.logger.log(
+      `Creating category. Name: ${dto.name}, User ID: ${userId}`,
+    );
+
+    const existingCategory =
+      await this.mongo.models.category
+        .findOne({
+          name: dto.name,
+        })
+        .lean()
+        .exec();
 
     if (existingCategory) {
+      this.logger.warn(
+        `Category already exists. Name: ${dto.name}`,
+      );
+
       throw new ConflictException(
         'Category with this name already exists.',
       );
     }
 
-    // to-do: Implement logic to set the createdBy field
     const createdBy = new Types.ObjectId(userId);
+
     const category = new this.mongo.models.category({
       name: dto.name,
       description: dto.description,
@@ -45,11 +57,17 @@ export class CategoryService {
       createdBy,
     });
 
-    return await category.save();
+    const createdCategory = await category.save();
+
+    this.logger.log(
+      `Category created successfully. Category ID: ${createdCategory._id}`,
+    );
+
+    return createdCategory.toObject() as Category;
   }
 
   /**
-   * Get all active categories
+   * Get all categories
    */
   async findAll(
     query: CategoryFilterDto,
@@ -66,12 +84,26 @@ export class CategoryService {
       sortOrder = 'asc',
     } = query;
 
+    this.logger.log(
+      `Fetching categories. Page: ${page}, Limit: ${limit}, Search: ${search || 'none'}`,
+    );
+
     const filter: Record<string, any> = {};
 
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        {
+          name: {
+            $regex: search,
+            $options: 'i',
+          },
+        },
+        {
+          description: {
+            $regex: search,
+            $options: 'i',
+          },
+        },
       ];
     }
 
@@ -94,12 +126,17 @@ export class CategoryService {
         .lean()
         .exec(),
 
-      this.mongo.models.category.countDocuments(filter),
+      this.mongo.models.category
+        .countDocuments(filter),
     ]);
 
+    this.logger.log(
+      `Categories fetched successfully. Count: ${data.length}, Total: ${total}`,
+    );
+
     return {
-      data,
-      total
+      data: data as Category[],
+      total,
     };
   }
 
@@ -107,31 +144,56 @@ export class CategoryService {
    * Get category by ID
    */
   async findById(id: string): Promise<Category> {
+    this.logger.log(
+      `Fetching category by ID: ${id}`,
+    );
+
     if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('Invalid category id.');
+      this.logger.warn(
+        `Invalid category ID: ${id}`,
+      );
+
+      throw new NotFoundException(
+        'Invalid category id.',
+      );
     }
 
-    const category = await this.mongo.models.category
-      .findOne({
-        _id: id,
-        isActive: true,
-      })
-      .lean()
-      .exec();
+    const category =
+      await this.mongo.models.category
+        .findOne({
+          _id: id,
+          isActive: true,
+        })
+        .lean()
+        .exec();
 
     if (!category) {
-      throw new NotFoundException('Category not found.');
+      this.logger.warn(
+        `Category not found. Category ID: ${id}`,
+      );
+
+      throw new NotFoundException(
+        'Category not found.',
+      );
     }
 
-    return category;
+    this.logger.log(
+      `Category fetched successfully. Category ID: ${id}`,
+    );
+
+    return category as Category;
   }
 
   /**
    * Get autocomplete suggestions for categories
-   * @param search 
-   * @returns 
    */
-  async autocomplete(search?: string): Promise<Category[]> {
+  async autocomplete(
+    search?: string,
+  ): Promise<Category[]> {
+    this.logger.log(
+      `Fetching category autocomplete. Search: ${search || 'none'}`,
+    );
+
     const filter: Record<string, any> = {
       isActive: true,
     };
@@ -143,13 +205,20 @@ export class CategoryService {
       };
     }
 
-    return this.mongo.models.category
-      .find(filter)
-      .select('_id name')
-      .sort({ name: 1 })
-      .limit(20)
-      .lean()
-      .exec();
+    const categories =
+      await this.mongo.models.category
+        .find(filter)
+        .select('_id name')
+        .sort({ name: 1 })
+        .limit(20)
+        .lean()
+        .exec();
+
+    this.logger.log(
+      `Category autocomplete completed. Count: ${categories.length}`,
+    );
+
+    return categories as Category[];
   }
 
   /**
@@ -160,28 +229,44 @@ export class CategoryService {
     dto: UpdateCategoryDto,
     userId: string,
   ): Promise<Category> {
+    this.logger.log(
+      `Updating category. Category ID: ${id}, User ID: ${userId}`,
+    );
+
     if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('Invalid category id.');
+      this.logger.warn(
+        `Invalid category ID: ${id}`,
+      );
+
+      throw new NotFoundException(
+        'Invalid category id.',
+      );
     }
 
     // Check duplicate category name
     if (dto.name) {
-      const existingCategory = await this.mongo.models.category
-        .findOne({
-          name: dto.name,
-          _id: { $ne: id },
-        })
-        .lean()
-        .exec();
+      const existingCategory =
+        await this.mongo.models.category
+          .findOne({
+            name: dto.name,
+            _id: {
+              $ne: id,
+            },
+          })
+          .lean()
+          .exec();
 
       if (existingCategory) {
+        this.logger.warn(
+          `Duplicate category name found. Name: ${dto.name}`,
+        );
+
         throw new ConflictException(
           'Category with this name already exists.',
         );
       }
     }
 
-    // to-do: Implement logic to set the updatedBy field
     const updatedBy = new Types.ObjectId(userId);
 
     const updateData: Record<string, any> = {
@@ -189,26 +274,37 @@ export class CategoryService {
       updatedBy,
     };
 
-    const updatedCategory = await this.mongo.models.category
-      .findOneAndUpdate(
-        {
-          _id: id,
-          isActive: true,
-        },
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        },
-      )
-      .lean()
-      .exec();
+    const updatedCategory =
+      await this.mongo.models.category
+        .findOneAndUpdate(
+          {
+            _id: id,
+            isActive: true,
+          },
+          updateData,
+          {
+            new: true,
+            runValidators: true,
+          },
+        )
+        .lean()
+        .exec();
 
     if (!updatedCategory) {
-      throw new NotFoundException('Category not found.');
+      this.logger.warn(
+        `Category not found while updating. Category ID: ${id}`,
+      );
+
+      throw new NotFoundException(
+        'Category not found.',
+      );
     }
 
-    return updatedCategory;
+    this.logger.log(
+      `Category updated successfully. Category ID: ${id}`,
+    );
+
+    return updatedCategory as Category;
   }
 
   /**
@@ -219,32 +315,52 @@ export class CategoryService {
     isActive: boolean,
     userId: string,
   ): Promise<Category> {
+    this.logger.log(
+      `Updating category status. Category ID: ${id}, Active: ${isActive}, User ID: ${userId}`,
+    );
+
     if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('Invalid category id.');
+      this.logger.warn(
+        `Invalid category ID: ${id}`,
+      );
+
+      throw new NotFoundException(
+        'Invalid category id.',
+      );
     }
 
-    // to-do: Implement logic to set the updatedBy field
     const updatedBy = new Types.ObjectId(userId);
 
-    const category = await this.mongo.models.category
-      .findOneAndUpdate(
-        { _id: id },
-        {
-          isActive,
-          updatedBy,
-        },
-        {
-          new: true,
-          runValidators: true,
-        },
-      )
-      .lean()
-      .exec();
+    const category =
+      await this.mongo.models.category
+        .findOneAndUpdate(
+          { _id: id },
+          {
+            isActive,
+            updatedBy,
+          },
+          {
+            new: true,
+            runValidators: true,
+          },
+        )
+        .lean()
+        .exec();
 
     if (!category) {
-      throw new NotFoundException('Category not found.');
+      this.logger.warn(
+        `Category not found while updating status. Category ID: ${id}`,
+      );
+
+      throw new NotFoundException(
+        'Category not found.',
+      );
     }
 
-    return category;
+    this.logger.log(
+      `Category status updated successfully. Category ID: ${id}, Active: ${isActive}`,
+    );
+
+    return category as Category;
   }
 }

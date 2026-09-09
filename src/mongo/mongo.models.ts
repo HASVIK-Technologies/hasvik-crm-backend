@@ -1,12 +1,7 @@
 import mongoose, { Model, Schema } from 'mongoose';
 
-import {
-  User,
-  UserDocument,
-  UserSchema,
-} from './schemas/user.schema';
-import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema } from './schemas';
-import type { Business, Category, FollowUp, Note } from './interfaces';
+import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, UserSchema } from './schemas';
+import type { Business, Category, FollowUp, Note, User } from './interfaces';
 
 type SchemaDefinition = {
   key: string;
@@ -17,7 +12,7 @@ type SchemaDefinition = {
 const SCHEMAS: SchemaDefinition[] = [
   {
     key: 'user',
-    name: User.name,
+    name: 'User',
     schema: UserSchema,
   },
   {
@@ -49,11 +44,11 @@ const SCHEMAS: SchemaDefinition[] = [
 
 export class MongoModels {
   // Define properties for each schema
-  readonly user!: Model<UserDocument>;
   readonly business!: Model<Business>;
   readonly followUp!: Model<FollowUp>;
   readonly category!: Model<Category>;
   readonly note!: Model<Note>;
+  readonly user!: Model<User>;
   
   constructor() {
     for (const item of SCHEMAS) {

@@ -1,12 +1,12 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { isObjectIdOrHexString } from 'mongoose';
 
 import { MongoService } from '../mongo/mongo.service';
-import { FollowUp,  } from '../mongo/interfaces';
-
+import { FollowUp } from '../mongo/interfaces';
 
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
@@ -15,6 +15,8 @@ import { NoteEntityType } from '../mongo/enums';
 
 @Injectable()
 export class FollowUpService {
+  private readonly logger = new Logger(FollowUpService.name);
+
   constructor(
     private readonly mongo: MongoService,
   ) {}
@@ -24,13 +26,25 @@ export class FollowUpService {
     data: CreateFollowUpDto,
     userId: string,
   ): Promise<FollowUp> {
+    this.logger.log(
+      `Creating follow-up. Business ID: ${data.businessId}, Assigned To: ${data.assignedTo}, User ID: ${userId}`,
+    );
+
     if (!isObjectIdOrHexString(data.businessId)) {
+      this.logger.warn(
+        `Invalid business ID while creating follow-up: ${data.businessId}`,
+      );
+
       throw new NotFoundException(
         'Invalid business id.',
       );
     }
 
     if (!isObjectIdOrHexString(data.assignedTo)) {
+      this.logger.warn(
+        `Invalid assigned user ID while creating follow-up: ${data.assignedTo}`,
+      );
+
       throw new NotFoundException(
         'Invalid assigned user id.',
       );
@@ -43,6 +57,10 @@ export class FollowUpService {
     });
 
     if (!business) {
+      this.logger.warn(
+        `Business not found while creating follow-up. Business ID: ${data.businessId}`,
+      );
+
       throw new NotFoundException(
         'Business not found.',
       );
@@ -54,9 +72,14 @@ export class FollowUpService {
       isDeleted: false,
     });
 
-    // to-do: Once user implementation is done, uncomment the code
-    if (false && !user) {
-      throw new NotFoundException('Assigned user not found.');
+    if (!user) {
+      this.logger.warn(
+        `Assigned user not found while creating follow-up. User ID: ${data.assignedTo}`,
+      );
+
+      throw new NotFoundException(
+        'Assigned user not found.',
+      );
     }
 
     // Create follow-up
@@ -65,14 +88,28 @@ export class FollowUpService {
       createdBy: userId,
     });
 
-    return await followUp.save();
+    const savedFollowUp = await followUp.save();
+
+    this.logger.log(
+      `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}`,
+    );
+
+    return savedFollowUp;
   }
 
   // GET FOLLOW-UP BY ID
   async findById(
     id: string,
   ): Promise<FollowUp & { notes: any[] }> {
+    this.logger.log(
+      `Fetching follow-up by ID: ${id}`,
+    );
+
     if (!isObjectIdOrHexString(id)) {
+      this.logger.warn(
+        `Invalid follow-up ID: ${id}`,
+      );
+
       throw new NotFoundException(
         'Invalid follow-up id.',
       );
@@ -84,6 +121,10 @@ export class FollowUpService {
       .exec();
 
     if (!followUp) {
+      this.logger.warn(
+        `Follow-up not found. Follow-up ID: ${id}`,
+      );
+
       throw new NotFoundException(
         'Follow-up not found.',
       );
@@ -99,6 +140,10 @@ export class FollowUpService {
       })
       .lean()
       .exec();
+
+    this.logger.log(
+      `Follow-up fetched successfully. Follow-up ID: ${id}, Notes: ${notes.length}`,
+    );
 
     return {
       ...followUp,
@@ -124,6 +169,10 @@ export class FollowUpService {
 
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
+
+    this.logger.log(
+      `Fetching follow-ups. Page: ${page}, Limit: ${limit}, Business ID: ${businessId || 'none'}, Assigned To: ${assignedTo || 'none'}`,
+    );
 
     const filter: Record<string, any> = {};
 
@@ -174,6 +223,10 @@ export class FollowUpService {
           .countDocuments(filter),
       ]);
 
+    this.logger.log(
+      `Follow-ups fetched successfully. Count: ${followUps.length}, Total: ${total}`,
+    );
+
     return {
       data: followUps as FollowUp[],
       total,
@@ -184,42 +237,72 @@ export class FollowUpService {
   async findByBusiness(
     businessId: string,
   ): Promise<FollowUp[]> {
+    this.logger.log(
+      `Fetching follow-up history. Business ID: ${businessId}`,
+    );
+
     if (!isObjectIdOrHexString(businessId)) {
+      this.logger.warn(
+        `Invalid business ID: ${businessId}`,
+      );
+
       throw new NotFoundException(
         'Invalid business id.',
       );
     }
 
-    return await this.mongo.models.followUp
-      .find({
-        businessId,
-      })
-      .sort({
-        scheduledAt: -1,
-      })
-      .lean()
-      .exec() as FollowUp[];
+    const followUps =
+      await this.mongo.models.followUp
+        .find({
+          businessId,
+        })
+        .sort({
+          scheduledAt: -1,
+        })
+        .lean()
+        .exec();
+
+    this.logger.log(
+      `Business follow-up history fetched successfully. Business ID: ${businessId}, Count: ${followUps.length}`,
+    );
+
+    return followUps as FollowUp[];
   }
 
   // GET USER FOLLOW-UPS
   async findByAssignedUser(
     userId: string,
   ): Promise<FollowUp[]> {
+    this.logger.log(
+      `Fetching follow-ups for assigned user. User ID: ${userId}`,
+    );
+
     if (!isObjectIdOrHexString(userId)) {
+      this.logger.warn(
+        `Invalid user ID: ${userId}`,
+      );
+
       throw new NotFoundException(
         'Invalid user id.',
       );
     }
 
-    return await this.mongo.models.followUp
-      .find({
-        assignedTo: userId,
-      })
-      .sort({
-        scheduledAt: 1,
-      })
-      .lean()
-      .exec() as FollowUp[];
+    const followUps =
+      await this.mongo.models.followUp
+        .find({
+          assignedTo: userId,
+        })
+        .sort({
+          scheduledAt: 1,
+        })
+        .lean()
+        .exec();
+
+    this.logger.log(
+      `User follow-ups fetched successfully. User ID: ${userId}, Count: ${followUps.length}`,
+    );
+
+    return followUps as FollowUp[];
   }
 
   // UPDATE FOLLOW-UP
@@ -227,7 +310,15 @@ export class FollowUpService {
     id: string,
     dto: UpdateFollowUpDto,
   ): Promise<FollowUp> {
+    this.logger.log(
+      `Updating follow-up. Follow-up ID: ${id}`,
+    );
+
     if (!isObjectIdOrHexString(id)) {
+      this.logger.warn(
+        `Invalid follow-up ID: ${id}`,
+      );
+
       throw new NotFoundException(
         'Invalid follow-up id.',
       );
@@ -247,10 +338,18 @@ export class FollowUpService {
         .exec();
 
     if (!followUp) {
+      this.logger.warn(
+        `Follow-up not found while updating. Follow-up ID: ${id}`,
+      );
+
       throw new NotFoundException(
         'Follow-up not found.',
       );
     }
+
+    this.logger.log(
+      `Follow-up updated successfully. Follow-up ID: ${id}`,
+    );
 
     return followUp as FollowUp;
   }
