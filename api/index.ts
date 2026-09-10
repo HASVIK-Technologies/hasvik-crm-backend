@@ -23,7 +23,6 @@ async function bootstrap() {
     new ExpressAdapter(server),
   );
 
-  // Body parser
   const bodyLimit = process.env.BODY_LIMIT || '20mb';
 
   nestApp.use(
@@ -39,16 +38,6 @@ async function bootstrap() {
     }),
   );
 
-  // Logger
-  nestApp.useLogger([
-    'log',
-    'error',
-    'warn',
-    'debug',
-    'verbose',
-  ]);
-
-  // Validation
   nestApp.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -56,27 +45,13 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
-  const allowedOrigins = process.env.ALLOW_ORIGIN
-    ? process.env.ALLOW_ORIGIN.split(',')
-    : [];
+  nestApp.enableCors();
 
-  if (allowedOrigins.length > 0) {
-    nestApp.enableCors({
-      origin: allowedOrigins,
-      credentials: true,
-    });
-  } else {
-    nestApp.enableCors();
-  }
-
-  // API prefix
   nestApp.setGlobalPrefix('api');
 
-  // Swagger
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Hasvik CRM API')
-    .setDescription('Auth APIs')
+    .setDescription('Hasvik CRM API Documentation')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -86,11 +61,9 @@ async function bootstrap() {
     swaggerConfig,
   );
 
-  SwaggerModule.setup(
-    'swagger',
-    nestApp,
-    swaggerDocument,
-  );
+  SwaggerModule.setup('swagger', nestApp, swaggerDocument, {
+    customSiteTitle: 'Hasvik CRM API',
+  });
 
   await nestApp.init();
 
