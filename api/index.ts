@@ -23,6 +23,7 @@ async function bootstrap() {
     new ExpressAdapter(server),
   );
 
+  // Body parser
   const bodyLimit = process.env.BODY_LIMIT || '20mb';
 
   nestApp.use(
@@ -38,6 +39,7 @@ async function bootstrap() {
     }),
   );
 
+  // Validation
   nestApp.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -45,10 +47,24 @@ async function bootstrap() {
     }),
   );
 
-  nestApp.enableCors();
+  // CORS
+  const allowedOrigins = process.env.ALLOW_ORIGIN
+    ? process.env.ALLOW_ORIGIN.split(',')
+    : [];
 
+  if (allowedOrigins.length > 0) {
+    nestApp.enableCors({
+      origin: allowedOrigins,
+      credentials: true,
+    });
+  } else {
+    nestApp.enableCors();
+  }
+
+  // API prefix
   nestApp.setGlobalPrefix('api');
 
+  // Swagger configuration
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Hasvik CRM API')
     .setDescription('Hasvik CRM API Documentation')
@@ -61,9 +77,26 @@ async function bootstrap() {
     swaggerConfig,
   );
 
-  SwaggerModule.setup('swagger', nestApp, swaggerDocument, {
-    customSiteTitle: 'Hasvik CRM API',
-  });
+  // Swagger UI
+  SwaggerModule.setup(
+    'swagger',
+    nestApp,
+    swaggerDocument,
+    {
+      customSiteTitle: 'Hasvik CRM API',
+
+      // Load Swagger CSS from CDN
+      customCssUrl: [
+        'https://unpkg.com/swagger-ui-dist@5/swagger-ui.css',
+      ],
+
+      // Load Swagger JS from CDN
+      customJs: [
+        'https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js',
+        'https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js',
+      ],
+    },
+  );
 
   await nestApp.init();
 
