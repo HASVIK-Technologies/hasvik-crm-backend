@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import {
   SwaggerModule,
@@ -6,13 +7,25 @@ import {
 } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
+import express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const server = express();
 
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(server),
+  );
+
+  // Body parser
   const bodyLimit = process.env.BODY_LIMIT || '20mb';
 
-  app.use(bodyParser.json({ limit: bodyLimit }));
+  app.use(
+    bodyParser.json({
+      limit: bodyLimit,
+    }),
+  );
+
   app.use(
     bodyParser.urlencoded({
       limit: bodyLimit,
@@ -20,6 +33,7 @@ async function bootstrap() {
     }),
   );
 
+  // Logger
   app.useLogger([
     'log',
     'error',
@@ -28,6 +42,7 @@ async function bootstrap() {
     'verbose',
   ]);
 
+  // Validation
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -35,6 +50,7 @@ async function bootstrap() {
     }),
   );
 
+  // CORS
   const allowedOrigins = process.env.ALLOW_ORIGIN
     ? process.env.ALLOW_ORIGIN.split(',')
     : [];
@@ -48,26 +64,38 @@ async function bootstrap() {
     app.enableCors();
   }
 
+  // API prefix
   app.setGlobalPrefix('api');
 
-  // Swagger
-  const config = new DocumentBuilder()
+  // Swagger configuration
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('Hasvik CRM API')
-    .setDescription('Auth APIs')
+    .setDescription('Hasvik CRM API Documentation')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  const swaggerDocument = SwaggerModule.createDocument(
+    app,
+    swaggerConfig,
+  );
 
-  SwaggerModule.setup('swagger', app, document);
+  // Swagger UI
+  SwaggerModule.setup(
+    'swagger',
+    app,
+    swaggerDocument,
+  );
 
-  const port = process.env.PORT || 4000;
+  await app.listen(4000);
 
-  await app.listen(port);
+  console.log(
+    'Hasvik CRM API running on http://localhost:4000',
+  );
 
-  console.log(`Application running on port ${port}`);
-  console.log(`Swagger: http://localhost:${port}/swagger`);
+  console.log(
+    'Swagger running on http://localhost:4000/swagger',
+  );
 }
 
 bootstrap();
