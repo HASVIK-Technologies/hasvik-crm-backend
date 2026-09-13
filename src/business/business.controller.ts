@@ -33,20 +33,6 @@ export class BusinessController {
     return this.businessService.findAll(query);
   }
 
-  @Get('category/:categoryId')
-  findByCategory(
-    @Param('categoryId') categoryId: string,
-  ) {
-    return this.businessService.findByCategory(categoryId);
-  }
-
-  @Get('assigned/:userId')
-  findByAssignedUser(
-    @Param('userId') userId: string,
-  ) {
-    return this.businessService.findByAssignedUser(userId);
-  }
-
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.businessService.findById(id);

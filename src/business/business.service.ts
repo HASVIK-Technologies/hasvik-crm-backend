@@ -12,6 +12,7 @@ import { Business } from 'src/mongo/interfaces';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { BusinessFilterDto } from './dto/get-business-filter.dto';
+import {BusinessResponse} from './interface/business-response'
 
 @Injectable()
 export class BusinessService {
@@ -25,7 +26,7 @@ export class BusinessService {
   async create(
     data: CreateBusinessDto,
     userId: string,
-  ): Promise<Business> {
+  ): Promise<BusinessResponse> {
     this.logger.log(
       `Creating business. Name: ${data.name}, User ID: ${userId}`,
     );
@@ -53,17 +54,17 @@ export class BusinessService {
       isDeleted: false,
     });
 
-    const createdBusiness = await business.save();
-
+    let createdBusiness = await business.save();
+    createdBusiness = await createdBusiness.populate('categoryId', '_id name');
     this.logger.log(
       `Business created successfully. Business ID: ${createdBusiness._id}`,
     );
 
-    return createdBusiness.toObject() as Business;
+    return this.mapBusinessResponse(createdBusiness.toObject());
   }
 
   // FIND BUSINESS BY ID
-  async findById(id: string): Promise<Business> {
+  async findById(id: string): Promise<BusinessResponse> {
     this.logger.log(
       `Fetching business by ID: ${id}`,
     );
@@ -84,6 +85,7 @@ export class BusinessService {
           _id: id,
           isDeleted: false,
         })
+        .populate('categoryId', '_id name')
         .lean()
         .exec();
 
@@ -101,7 +103,8 @@ export class BusinessService {
       `Business fetched successfully. Business ID: ${id}`,
     );
 
-    return business as Business;
+    //return business as Business;
+    return this.mapBusinessResponse(business);
   }
 
   // UPDATE BUSINESS
@@ -109,7 +112,7 @@ export class BusinessService {
     id: string,
     dto: UpdateBusinessDto,
     userId: string,
-  ): Promise<Business> {
+  ): Promise<BusinessResponse> {
     this.logger.log(
       `Updating business. Business ID: ${id}, User ID: ${userId}`,
     );
@@ -140,6 +143,7 @@ export class BusinessService {
             runValidators: true,
           },
         )
+        .populate('categoryId', '_id name')
         .lean()
         .exec();
 
@@ -157,7 +161,7 @@ export class BusinessService {
       `Business updated successfully. Business ID: ${id}`,
     );
 
-    return business as Business;
+    return this.mapBusinessResponse(business);
   }
 
   // DELETE BUSINESS
@@ -220,11 +224,8 @@ export class BusinessService {
   async findAll(
     query: BusinessFilterDto,
   ): Promise<{
-    data: Business[];
+    data: BusinessResponse[];
     total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
   }> {
     const {
       search,
@@ -313,6 +314,7 @@ export class BusinessService {
       await Promise.all([
         this.mongo.models.business
           .find(filter)
+          .populate('categoryId', '_id name')
           .sort(sortBy || { createdAt: -1 })
           .skip(skip)
           .limit(limit)
@@ -328,81 +330,17 @@ export class BusinessService {
     );
 
     return {
-      data: businesses as Business[],
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      data: businesses.map((business) => this.mapBusinessResponse(business)),
+      total
     };
   }
 
-  // FIND BUSINESSES BY CATEGORY
-  async findByCategory(
-    categoryId: string,
-  ): Promise<Business[]> {
-    this.logger.log(
-      `Fetching businesses by category. Category ID: ${categoryId}`,
-    );
+  private mapBusinessResponse(business: any): BusinessResponse {
+    const { categoryId, ...businessData } = business;
 
-    if (!isObjectIdOrHexString(categoryId)) {
-      this.logger.warn(
-        `Invalid category ID: ${categoryId}`,
-      );
-
-      throw new NotFoundException(
-        'Invalid category id.',
-      );
-    }
-
-    const businesses =
-      await this.mongo.models.business
-        .find({
-          categoryId,
-          isDeleted: false,
-        })
-        .sort({ createdAt: -1 })
-        .lean()
-        .exec();
-
-    this.logger.log(
-      `Businesses fetched by category. Category ID: ${categoryId}, Count: ${businesses.length}`,
-    );
-
-    return businesses as Business[];
-  }
-
-  // FIND BUSINESSES ASSIGNED TO USER
-  async findByAssignedUser(
-    userId: string,
-  ): Promise<Business[]> {
-    this.logger.log(
-      `Fetching businesses assigned to user. User ID: ${userId}`,
-    );
-
-    if (!isObjectIdOrHexString(userId)) {
-      this.logger.warn(
-        `Invalid user ID: ${userId}`,
-      );
-
-      throw new NotFoundException(
-        'Invalid user id.',
-      );
-    }
-
-    const businesses =
-      await this.mongo.models.business
-        .find({
-          assignedTo: userId,
-          isDeleted: false,
-        })
-        .sort({ createdAt: -1 })
-        .lean()
-        .exec();
-
-    this.logger.log(
-      `Businesses fetched for user. User ID: ${userId}, Count: ${businesses.length}`,
-    );
-
-    return businesses as Business[];
+    return {
+      ...businessData,
+      category: categoryId,
+    };
   }
 }

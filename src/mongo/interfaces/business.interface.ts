@@ -22,7 +22,6 @@ export interface ContactNumber {
   name?: string
   isPrimary: boolean;
 }
-
 export interface Business {
   _id: Types.ObjectId;
 
