@@ -34,7 +34,7 @@ export const FollowUpSchema: Schema<FollowUp> = new Schema<FollowUp>(
     status: {
       type: String,
       enum: Object.values(FollowUpStatus),
-      default: FollowUpStatus.PENDING,
+      default: FollowUpStatus.SCHEDULED,
       index: true,
     },
 

@@ -13,12 +13,28 @@ import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { BusinessFilterDto } from './dto/get-business-filter.dto';
+import { BusinessAutocompleteDto } from './dto/business-autocomplete.dto';
+import { ApiResponse } from 'node_modules/@nestjs/swagger/dist/decorators/api-response.decorator';
+import { ApiOperation } from 'node_modules/@nestjs/swagger/dist/decorators/api-operation.decorator';
 
 @Controller('businesses')
 export class BusinessController {
   constructor(
     private readonly businessService: BusinessService,
   ) {}
+
+  @Get('autocomplete')
+  @ApiOperation({
+    summary: 'Autocomplete businesses',
+    description: 'Returns active businesses matching the search text.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Businesses retrieved successfully.',
+  })
+  async autocomplete(@Query() query: BusinessAutocompleteDto) {
+    return this.businessService.autocomplete(query.search);
+  }
 
   @Post()
   create(@Body() dto: CreateBusinessDto) {

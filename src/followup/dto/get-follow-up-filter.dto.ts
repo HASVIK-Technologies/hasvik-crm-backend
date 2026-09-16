@@ -31,7 +31,7 @@ export class FollowUpFilterDto {
 
   @ApiPropertyOptional({
     enum: FollowUpStatus,
-    example: FollowUpStatus.PENDING,
+    example: FollowUpStatus.SCHEDULED,
     description: 'Filter follow-ups by status',
   })
   @IsOptional()

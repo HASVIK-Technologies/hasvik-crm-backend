@@ -27,6 +27,19 @@ export class CategoryController {
   constructor(
     private readonly categoryService: CategoryService,
   ) {}
+  
+  @Get('autocomplete')
+  @ApiOperation({
+    summary: 'Autocomplete categories',
+    description: 'Returns active categories matching the search text.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully.',
+  })
+  async autocomplete(@Query() query: CategoryAutocompleteDto) {
+    return this.categoryService.autocomplete(query.search);
+  }
 
   /**
    * Create a new category
@@ -64,19 +77,7 @@ export class CategoryController {
   async findAll(@Query() query: CategoryFilterDto) {
     return this.categoryService.findAll(query);
   }
-  
-  @Get('autocomplete')
-  @ApiOperation({
-    summary: 'Autocomplete categories',
-    description: 'Returns active categories matching the search text.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Categories retrieved successfully.',
-  })
-  async autocomplete(@Query() query: CategoryAutocompleteDto) {
-    return this.categoryService.autocomplete(query.search);
-  }
+
 
   /**
    * Get category by ID

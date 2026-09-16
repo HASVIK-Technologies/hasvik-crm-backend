@@ -44,7 +44,7 @@ export class UpdateFollowUpDto {
 
   @ApiPropertyOptional({
     enum: FollowUpStatus,
-    example: FollowUpStatus.PENDING,
+    example: FollowUpStatus.SCHEDULED,
     description: 'Current status of the follow-up',
   })
   @IsOptional()

@@ -1,27 +1,15 @@
 import { Types } from 'mongoose';
+import { BusinessStatus } from '../enums';
 
-export enum BusinessStatus {
-  NEW = 'NEW',
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  CONVERTED = 'CONVERTED',
-  LOST = 'LOST',
-}
 
-export enum BusinessType {
-  RETAILER = 'RETAILER',
-  WHOLESALER = 'WHOLESALER',
-  DISTRIBUTOR = 'DISTRIBUTOR',
-  MANUFACTURER = 'MANUFACTURER',
-  SERVICE_PROVIDER = 'SERVICE_PROVIDER',
-  OTHER = 'OTHER',
-}
+
 
 export interface ContactNumber {
   number: string;
   name?: string
   isPrimary: boolean;
 }
+
 export interface Business {
   _id: Types.ObjectId;
 
@@ -30,8 +18,6 @@ export interface Business {
   description?: string;
 
   categoryId?: Types.ObjectId;
-
-  businessType: BusinessType;
 
   status: BusinessStatus;
 

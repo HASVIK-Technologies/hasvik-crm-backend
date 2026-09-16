@@ -8,6 +8,7 @@ import { FollowupModule } from './followup/followup.module';
 import { CategoryModule } from './category/category.module';
 import { NoteModule } from './note/note.module';
 import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UserModule } from './user/user.module';
     CategoryModule,
     NoteModule,
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

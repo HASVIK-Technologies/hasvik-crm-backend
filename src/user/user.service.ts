@@ -341,4 +341,41 @@ export class UserService {
       message: 'User deleted successfully.',
     };
   }
+
+  /**
+   * Get autocomplete suggestions for users
+   */
+  async autocomplete(
+    search?: string,
+  ): Promise<User[]> {
+    this.logger.log(
+      `Fetching user autocomplete. Search: ${search || 'none'}`,
+    );
+
+    const filter: Record<string, any> = {
+      isDeleted: false,
+    };
+
+    if (search) {
+      filter.fullName = {
+        $regex: search,
+        $options: 'i',
+      };
+    }
+
+    const users =
+      await this.mongo.models.user
+        .find(filter)
+        .select('_id fullName')
+        .sort({ fullName: 1 })
+        .limit(50)
+        .lean()
+        .exec();
+
+    this.logger.log(
+      `User autocomplete completed. Count: ${users.length}`,
+    );
+
+    return users as User[];
+  }
 }

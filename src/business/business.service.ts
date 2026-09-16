@@ -220,6 +220,43 @@ export class BusinessService {
     };
   }
 
+  /**
+   * Get autocomplete suggestions for businesses
+   */
+  async autocomplete(
+    search?: string,
+  ): Promise<Business[]> {
+    this.logger.log(
+      `Fetching business autocomplete. Search: ${search || 'none'}`,
+    );
+
+    const filter: Record<string, any> = {
+      isDeleted: false,
+    };
+
+    if (search) {
+      filter.name = {
+        $regex: search,
+        $options: 'i',
+      };
+    }
+
+    const business =
+      await this.mongo.models.business
+        .find(filter)
+        .select('_id name')
+        .sort({ name: 1 })
+        .limit(50)
+        .lean()
+        .exec();
+
+    this.logger.log(
+      `Business autocomplete completed. Count: ${business.length}`,
+    );
+
+    return business as Business[];
+  }
+
   // GET ALL BUSINESSES
   async findAll(
     query: BusinessFilterDto,
@@ -231,7 +268,6 @@ export class BusinessService {
       search,
       status,
       categoryId,
-      assignedTo,
       city,
       isDeleted,
       sortBy,
@@ -295,10 +331,6 @@ export class BusinessService {
 
     if (categoryId) {
       filter.categoryId = categoryId;
-    }
-
-    if (assignedTo) {
-      filter.assignedTo = assignedTo;
     }
 
     if (city) {

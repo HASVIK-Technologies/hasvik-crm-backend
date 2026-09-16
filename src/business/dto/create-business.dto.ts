@@ -14,8 +14,8 @@ import {
   ApiProperty,
   ApiPropertyOptional,
 } from '@nestjs/swagger';
+import { BusinessStatus } from 'src/mongo/enums';
 
-import { BusinessStatus, BusinessType } from 'src/mongo/interfaces';
 
 export class ContactNumberDto {
   @ApiProperty({
@@ -56,15 +56,6 @@ export class CreateBusinessDto {
   @IsOptional()
   @IsMongoId()
   categoryId?: string;
-
-  @ApiPropertyOptional({
-    enum: BusinessType,
-    example: BusinessType.RETAILER,
-    default: BusinessType.OTHER,
-  })
-  @IsOptional()
-  @IsEnum(BusinessType)
-  businessType?: BusinessType;
 
   @ApiPropertyOptional({
     enum: BusinessStatus,

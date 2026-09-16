@@ -1,5 +1,6 @@
 import { Schema, Types } from 'mongoose';
-import { BusinessStatus, BusinessType, Business, ContactNumber } from '../interfaces';
+import { Business, ContactNumber } from '../interfaces';
+import { BusinessStatus } from '../enums';
 
 const ContactNumberSchema: Schema<ContactNumber> = new Schema<ContactNumber>(
   {
@@ -36,13 +37,6 @@ export const BusinessSchema: Schema<Business> = new Schema<Business>(
       type: Types.ObjectId,
       ref: 'Category',
       default: null,
-      index: true,
-    },
-
-    businessType: {
-      type: String,
-      enum: Object.values(BusinessType),
-      default: BusinessType.OTHER,
       index: true,
     },
 

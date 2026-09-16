@@ -18,11 +18,25 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFilterDto } from './dto/get-user-filter.dto';
+import { UserAutocompleteDto } from './dto/user-autocomplete.dto';
 
 @ApiTags('Users')
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get('autocomplete')
+  @ApiOperation({
+    summary: 'Autocomplete user',
+    description: 'Returns users matching the search text.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Users retrieved successfully.',
+  })
+  async autocomplete(@Query() query: UserAutocompleteDto) {
+    return this.userService.autocomplete(query.search);
+  }
 
   @Post()
   @ApiOperation({

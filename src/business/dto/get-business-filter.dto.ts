@@ -6,8 +6,7 @@ import {
   IsString,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-
-import { BusinessStatus, BusinessType } from 'src/mongo/interfaces';
+import { BusinessStatus } from 'src/mongo/enums';
 
 export class BusinessFilterDto {
   @ApiPropertyOptional({
@@ -20,21 +19,12 @@ export class BusinessFilterDto {
 
   @ApiPropertyOptional({
     enum: BusinessStatus,
-    example: BusinessStatus.ACTIVE,
+    example: BusinessStatus.NEW,
     description: 'Filter businesses by status',
   })
   @IsOptional()
   @IsEnum(BusinessStatus)
   status?: BusinessStatus;
-
-  @ApiPropertyOptional({
-    enum: BusinessType,
-    example: BusinessType.RETAILER,
-    description: 'Filter businesses by business type',
-  })
-  @IsOptional()
-  @IsEnum(BusinessType)
-  businessType?: BusinessType;
 
   @ApiPropertyOptional({
     example: '665c12345678901234567890',
@@ -43,14 +33,6 @@ export class BusinessFilterDto {
   @IsOptional()
   @IsMongoId()
   categoryId?: string;
-
-  @ApiPropertyOptional({
-    example: '665c12345678901234567890',
-    description: 'Filter businesses assigned to a specific user',
-  })
-  @IsOptional()
-  @IsMongoId()
-  assignedTo?: string;
 
   @ApiPropertyOptional({
     example: 'Ballia',

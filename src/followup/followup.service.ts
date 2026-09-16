@@ -94,6 +94,20 @@ export class FollowUpService {
       `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}`,
     );
 
+    if(data.notes) {
+      // Create note for the follow-up
+      const note = new this.mongo.models.note({ 
+        entityId: savedFollowUp._id,
+        entityType: NoteEntityType.FOLLOW_UP,
+        content: data.notes,
+        createdBy: userId,
+      });
+      await note.save();
+      this.logger.log(
+        `Note created for follow-up. Note ID: ${note._id}, Follow-up ID: ${savedFollowUp._id}`,
+      );
+    }
+
     return savedFollowUp;
   }
 

@@ -210,7 +210,7 @@ export class CategoryService {
         .find(filter)
         .select('_id name')
         .sort({ name: 1 })
-        .limit(20)
+        .limit(50)
         .lean()
         .exec();
 
