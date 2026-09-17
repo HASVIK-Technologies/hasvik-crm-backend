@@ -12,7 +12,7 @@ import {
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
-import { BusinessFilterDto } from './dto/get-business-filter.dto';
+import { BusinessFilterDto, BusinessKPIsDto } from './dto/get-business-filter.dto';
 import { BusinessAutocompleteDto } from './dto/business-autocomplete.dto';
 import { ApiResponse } from 'node_modules/@nestjs/swagger/dist/decorators/api-response.decorator';
 import { ApiOperation } from 'node_modules/@nestjs/swagger/dist/decorators/api-operation.decorator';
@@ -97,7 +97,7 @@ export class BusinessController {
     status: 200,
     description: 'Businesses retrieved successfully.',
   })
-  async getKpis(@Query() query: BusinessFilterDto) {
+  async getKpis(@Query() query: BusinessKPIsDto) {
     return this.businessService.getKpis(query);
   }
 

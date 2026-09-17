@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { BusinessStatus } from 'src/mongo/enums';
 
 export class BusinessFilterDto {
@@ -85,3 +85,8 @@ export class BusinessFilterDto {
   @IsString()
   sortBy?: string;
 }
+
+export class BusinessKPIsDto extends OmitType(
+  BusinessFilterDto,
+  ['page', 'limit', 'sortBy'] as const,
+) {}

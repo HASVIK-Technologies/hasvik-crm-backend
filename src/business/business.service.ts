@@ -11,7 +11,7 @@ import { Business } from 'src/mongo/interfaces';
 
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
-import { BusinessFilterDto } from './dto/get-business-filter.dto';
+import { BusinessFilterDto, BusinessKPIsDto } from './dto/get-business-filter.dto';
 import {BusinessResponse} from './interface/business-response'
 import { BusinessStatus } from 'src/mongo/enums';
 
@@ -292,7 +292,7 @@ export class BusinessService {
   /**
    * Get KPI suggestions for businesses
    */
-  async getKpis(query: BusinessFilterDto): Promise<string[]> {
+  async getKpis(query: BusinessKPIsDto): Promise<string[]> {
     
     this.logger.log(
       `Fetching business KPIs`
