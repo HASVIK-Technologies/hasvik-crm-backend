@@ -75,6 +75,9 @@ export class BusinessController {
     return this.businessService.getLocations('state');
   }
 
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Post()
+  // @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Post()
   create(@Body() dto: CreateBusinessDto) {
     // Replace with authenticated user ID

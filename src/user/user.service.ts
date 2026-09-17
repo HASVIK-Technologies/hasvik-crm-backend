@@ -378,4 +378,14 @@ export class UserService {
 
     return users as User[];
   }
+
+  async findByEmail(email: string) {
+    return this.mongo.models.user
+      .findOne({
+        email: email.toLowerCase().trim(),
+        isDeleted: false,
+      })
+      .select('+password')
+      .exec();
+  }
 }

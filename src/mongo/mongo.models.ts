@@ -2,6 +2,8 @@ import mongoose, { Model, Schema } from 'mongoose';
 
 import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, UserSchema } from './schemas';
 import type { Business, Category, FollowUp, Note, User } from './interfaces';
+import { RefreshTokenSchema } from './schemas/refresh-token.schema';
+import { RefreshToken } from './interfaces/refresh-token.interface';
 
 type SchemaDefinition = {
   key: string;
@@ -35,11 +37,11 @@ const SCHEMAS: SchemaDefinition[] = [
     name: 'Note',
     schema: NoteSchema,
   },
-  // {
-  //   key: 'booking',
-  //   name: Booking.name,
-  //   schema: BookingSchema,
-  // },
+  {
+    key: 'refreshToken',
+    name: 'RefreshToken',
+    schema: RefreshTokenSchema,
+  },
 ];
 
 export class MongoModels {
@@ -49,6 +51,7 @@ export class MongoModels {
   readonly category!: Model<Category>;
   readonly note!: Model<Note>;
   readonly user!: Model<User>;
+  readonly refreshToken!: Model<RefreshToken>
   
   constructor() {
     for (const item of SCHEMAS) {

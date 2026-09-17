@@ -1,109 +1,300 @@
 import {
   Injectable,
-  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { createHash, randomUUID } from 'crypto';
 
-import { MongoService } from '../mongo/mongo.service';
 import { LoginDto } from './dto/login.dto';
+import { UserRole } from '../mongo/enums';
+import { UserService } from '../user/user.service';
+import { RefreshTokenService } from '../refresh-token/refresh-token.service';
+import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
+
+interface RefreshTokenPayload {
+  sub: string;
+  email: string;
+  role: UserRole;
+  jti: string;
+  iat?: number;
+  exp?: number;
+}
+
+interface RefreshUser {
+  userId: string;
+  refreshToken: string;
+}
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
-    private readonly mongo: MongoService,
     private readonly jwtService: JwtService,
+    private readonly userService: UserService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
-  async login(dto: LoginDto) {
-    this.logger.log(
-      `Login attempt. Email: ${dto.email}`,
+  /**
+   * Login user
+   */
+  async login(loginDto: LoginDto) {
+    const user = await this.userService.findByEmail(
+      loginDto.email,
     );
 
-    const user = await this.mongo.models.user
-      .findOne({
-        email: dto.email,
-        isDeleted: false,
-      })
-      .select('+password')
-      .lean()
-      .exec();
-
-    if (!user) {
-      this.logger.warn(
-        `Login failed. User not found or inactive. Email: ${dto.email}`,
-      );
-
+    if (!user || user.isDeleted) {
       throw new UnauthorizedException(
-        'Invalid email or password.',
+        'Invalid email or password',
       );
     }
 
-    const passwordMatches = await bcrypt.compare(
-      dto.password,
+    const passwordMatched = await bcrypt.compare(
+      loginDto.password,
       user.password,
     );
 
-    if (!passwordMatches) {
-      this.logger.warn(
-        `Login failed. Invalid password. User ID: ${user._id}`,
-      );
-
+    if (!passwordMatched) {
       throw new UnauthorizedException(
-        'Invalid email or password.',
+        'Invalid email or password',
       );
     }
 
-    const payload = {
-      sub: user._id.toString(),
+    const authenticatedUser: AuthenticatedUser = {
+      userId: user._id.toString(),
       email: user.email,
       role: user.role,
     };
 
-    const accessToken =
-      await this.jwtService.signAsync(payload);
+    const accessToken = await this.generateAccessToken(
+      authenticatedUser,
+    );
 
-    this.logger.log(
-      `Login successful. User ID: ${user._id}`,
+    const refreshToken = await this.generateRefreshToken(
+      authenticatedUser,
     );
 
     return {
       accessToken,
-      user: {
-        _id: user._id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        isDeleted: user.isDeleted,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+      refreshToken,
+      user: authenticatedUser,
     };
   }
 
-  async validateUser(userId: string) {
-    const user = await this.mongo.models.user
-      .findOne({
-        _id: userId,
-        isDeleted: false,
-      })
-      .select('-password')
-      .lean()
-      .exec();
+  /**
+   * Generate access token
+   */
+  private async generateAccessToken(
+    user: AuthenticatedUser,
+  ): Promise<string> {
+    const payload = {
+      sub: user.userId,
+      email: user.email,
+      role: user.role,
+    };
 
-    if (!user) {
-      this.logger.warn(
-        `Authenticated user not found or deleted. User ID: ${userId}`,
-      );
+    return this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: '15m',
+    });
+  }
 
+  /**
+   * Generate refresh token and store its hash
+   * in MongoDB.
+   */
+  private async generateRefreshToken(
+    user: AuthenticatedUser,
+  ): Promise<string> {
+    const jti = randomUUID();
+
+    const payload = {
+      sub: user.userId,
+      email: user.email,
+      role: user.role,
+      jti,
+    };
+
+    const refreshToken = await this.jwtService.signAsync(
+      payload,
+      {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '7d',
+      },
+    );
+
+    const tokenHash = this.hashToken(refreshToken);
+
+    const expiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    );
+
+    await this.refreshTokenService.create({
+      userId: user.userId,
+      jti,
+      tokenHash,
+      expiresAt,
+    });
+
+    return refreshToken;
+  }
+
+  /**
+   * Refresh access token and rotate refresh token.
+   */
+  async refresh(refreshUser: RefreshUser) {
+    if (
+      !refreshUser?.userId ||
+      !refreshUser?.refreshToken
+    ) {
       throw new UnauthorizedException(
-        'User not found.',
+        'Invalid refresh token',
       );
     }
 
-    return user;
+    let payload: RefreshTokenPayload;
+
+    try {
+      payload =
+        await this.jwtService.verifyAsync<RefreshTokenPayload>(
+          refreshUser.refreshToken,
+          {
+            secret: process.env.JWT_REFRESH_SECRET,
+          },
+        );
+    } catch {
+      throw new UnauthorizedException(
+        'Invalid or expired refresh token',
+      );
+    }
+
+    if (!payload?.sub || !payload?.jti) {
+      throw new UnauthorizedException(
+        'Invalid refresh token',
+      );
+    }
+
+    /*
+     * Make sure the token belongs to the authenticated
+     * user returned by the refresh strategy.
+     */
+    if (payload.sub !== refreshUser.userId) {
+      throw new UnauthorizedException(
+        'Invalid refresh token',
+      );
+    }
+
+    /*
+     * Find the refresh-token session using
+     * the hashed raw token.
+     */
+    const tokenHash = this.hashToken(
+      refreshUser.refreshToken,
+    );
+
+    const storedToken =
+      await this.refreshTokenService.findByTokenHash(
+        tokenHash,
+      );
+
+    if (!storedToken) {
+      throw new UnauthorizedException(
+        'Refresh token has been revoked or is invalid',
+      );
+    }
+
+    /*
+     * Make sure the JTI also matches.
+     */
+    if (storedToken.jti !== payload.jti) {
+      throw new UnauthorizedException(
+        'Invalid refresh token',
+      );
+    }
+
+    /*
+     * Check expiration in case the database record
+     * has not yet been removed by MongoDB TTL.
+     */
+    if (storedToken.expiresAt <= new Date()) {
+      throw new UnauthorizedException(
+        'Refresh token has expired',
+      );
+    }
+
+    /*
+     * Get the latest user information from MongoDB.
+     *
+     * This ensures changes to role/email/deleted status
+     * are reflected when issuing new tokens.
+     */
+    const user = await this.userService.findById(
+      refreshUser.userId,
+    );
+
+    if (!user || user.isDeleted) {
+      throw new UnauthorizedException(
+        'User is no longer active',
+      );
+    }
+
+    const authenticatedUser: AuthenticatedUser = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    };
+
+    /*
+     * IMPORTANT:
+     * Revoke the old refresh token BEFORE
+     * generating the replacement.
+     */
+    await this.refreshTokenService.revokeByJti(
+      payload.jti,
+    );
+
+    /*
+     * Generate new tokens.
+     */
+    const accessToken = await this.generateAccessToken(
+      authenticatedUser,
+    );
+
+    const newRefreshToken =
+      await this.generateRefreshToken(
+        authenticatedUser,
+      );
+
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user: authenticatedUser,
+    };
+  }
+
+  /**
+   * Logout user.
+   *
+   * This currently revokes all refresh sessions
+   * belonging to the user.
+   */
+  async logout(userId: string) {
+    await this.refreshTokenService.revokeByUserId(
+      userId,
+    );
+
+    return {
+      message: 'Logged out successfully',
+    };
+  }
+
+  /**
+   * Hash refresh token.
+   *
+   * Raw refresh tokens are never stored in MongoDB.
+   */
+  private hashToken(token: string): string {
+    return createHash('sha256')
+      .update(token)
+      .digest('hex');
   }
 }

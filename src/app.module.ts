@@ -9,6 +9,7 @@ import { CategoryModule } from './category/category.module';
 import { NoteModule } from './note/note.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { RefreshTokenModule } from './refresh-token/refresh-token.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AuthModule } from './auth/auth.module';
     NoteModule,
     UserModule,
     AuthModule,
+    RefreshTokenModule,
   ],
   controllers: [AppController],
   providers: [AppService],

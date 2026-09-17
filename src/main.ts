@@ -8,6 +8,7 @@ import {
 import { ValidationPipe } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const server = express();
@@ -16,6 +17,9 @@ async function bootstrap() {
     AppModule,
     new ExpressAdapter(server),
   );
+
+  // Cookie parser
+  app.use(cookieParser());
 
   // Body parser
   const bodyLimit = process.env.BODY_LIMIT || '20mb';
@@ -45,8 +49,9 @@ async function bootstrap() {
   // Validation
   app.useGlobalPipes(
     new ValidationPipe({
-      transform: true,
       whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
