@@ -13,6 +13,7 @@ import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { BusinessFilterDto } from './dto/get-business-filter.dto';
 import {BusinessResponse} from './interface/business-response'
+import { BusinessStatus } from 'src/mongo/enums';
 
 @Injectable()
 export class BusinessService {
@@ -257,6 +258,134 @@ export class BusinessService {
     return business as Business[];
   }
 
+  async getLocations(locationType: string){
+    const data =
+      await this.mongo.models.business
+        .find({ isDeleted: false })
+        .select(locationType)
+        .sort({ [locationType]: 1 })
+        .lean()
+        .exec();
+
+      const uniqueData = [...new Set(data.map(item => item[locationType]))];
+
+    return uniqueData;
+  }
+
+  /**
+   * Get status suggestions for businesses
+   */
+  async getStatus(): Promise<string[]> {
+    this.logger.log(
+      `Fetching business status`
+    );
+
+    
+    const status = Object.keys(BusinessStatus);
+    this.logger.log(
+      `Business status completed. Count: ${status.length}`,
+    );
+
+    return status;
+  }
+
+  /**
+   * Get KPI suggestions for businesses
+   */
+  async getKpis(query: BusinessFilterDto): Promise<string[]> {
+    
+    this.logger.log(
+      `Fetching business KPIs`
+    );
+
+
+    const filter: Record<string, any> = this.filterforGetBusinesses(query);
+    const matchStage = {
+      $match: filter
+    };
+
+    const groupStage = {
+      $group: {
+        _id: null,
+
+        total: {
+          $sum: 1,
+        },
+
+        active: {
+          $sum: {
+            $cond: [
+              {
+                $in: [
+                  '$status',
+                  [
+                    "NEW",
+                    "CONTACTED",
+                    "INTERESTED",
+                    "PROPOSAL_AND_NEGOTIATION",
+                  ],
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+
+        new: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', "NEW"] },
+              1,
+              0,
+            ],
+          },
+        },
+
+        interested: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', "INTERESTED"] },
+              1,
+              0,
+            ],
+          },
+        },
+
+        won: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', "WON"] },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+    };
+    
+    const projectStage = {
+      $project: {
+        _id: 0,
+        total: 1,
+        active: 1,
+        new: 1,
+        interested: 1,
+        won: 1,
+      },
+    }
+
+    const pipeline = [
+      matchStage,
+      groupStage,
+      projectStage
+    ];
+
+     const kpis = await this.mongo.models.business.aggregate(pipeline).exec();
+
+    return kpis;
+  }
+
   // GET ALL BUSINESSES
   async findAll(
     query: BusinessFilterDto,
@@ -265,11 +394,6 @@ export class BusinessService {
     total: number;
   }> {
     const {
-      search,
-      status,
-      categoryId,
-      city,
-      isDeleted,
       sortBy,
     } = query;
 
@@ -283,9 +407,43 @@ export class BusinessService {
         ? Number(query.limit)
         : 10;
 
+    const filter: Record<string, any> = this.filterforGetBusinesses(query);
+
+    const skip = (page - 1) * limit;
+
+    const [businesses, total] =
+      await Promise.all([
+        this.mongo.models.business
+          .find(filter)
+          .populate('categoryId', '_id name')
+          .sort(sortBy || { createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean()
+          .exec(),
+
+        this.mongo.models.business
+          .countDocuments(filter),
+      ]);
+
     this.logger.log(
-      `Fetching businesses. Page: ${page}, Limit: ${limit}, Search: ${search || 'none'}`,
+      `Businesses fetched successfully. Count: ${businesses.length}, Total: ${total}`,
     );
+
+    return {
+      data: businesses.map((business) => this.mapBusinessResponse(business)),
+      total
+    };
+  }
+
+  filterforGetBusinesses(query: BusinessFilterDto){
+    const {
+      search,
+      status,
+      categoryId,
+      city,
+      isDeleted,
+    } = query;
 
     const filter: Record<string, any> = {};
 
@@ -339,32 +497,7 @@ export class BusinessService {
         $options: 'i',
       };
     }
-
-    const skip = (page - 1) * limit;
-
-    const [businesses, total] =
-      await Promise.all([
-        this.mongo.models.business
-          .find(filter)
-          .populate('categoryId', '_id name')
-          .sort(sortBy || { createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean()
-          .exec(),
-
-        this.mongo.models.business
-          .countDocuments(filter),
-      ]);
-
-    this.logger.log(
-      `Businesses fetched successfully. Count: ${businesses.length}, Total: ${total}`,
-    );
-
-    return {
-      data: businesses.map((business) => this.mapBusinessResponse(business)),
-      total
-    };
+    return filter;
   }
 
   private mapBusinessResponse(business: any): BusinessResponse {

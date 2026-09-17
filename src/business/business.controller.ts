@@ -35,6 +35,45 @@ export class BusinessController {
   async autocomplete(@Query() query: BusinessAutocompleteDto) {
     return this.businessService.autocomplete(query.search);
   }
+  
+  @Get('status')
+  @ApiOperation({
+    summary: 'Get business status',
+    description: 'Returns the status of a specific business.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Businesses retrieved successfully.',
+  })
+  async getStatus() {
+    return this.businessService.getStatus();
+  }
+
+  @Get('city')
+  @ApiOperation({
+    summary: 'Get business city',
+    description: 'Returns cities.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'City retrieved successfully.',
+  })
+  async getCity() {
+    return this.businessService.getLocations('city');
+  }
+
+  @Get('state')
+  @ApiOperation({
+    summary: 'Get business state',
+    description: 'Returns the states.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'State retrieved successfully.',
+  })
+  async getState() {
+    return this.businessService.getLocations('state');
+  }
 
   @Post()
   create(@Body() dto: CreateBusinessDto) {
@@ -48,6 +87,20 @@ export class BusinessController {
   findAll(@Query() query: BusinessFilterDto) {
     return this.businessService.findAll(query);
   }
+
+  @Get('kpis')
+  @ApiOperation({
+    summary: 'Get business KPIs',
+    description: 'Returns key performance indicators for businesses.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Businesses retrieved successfully.',
+  })
+  async getKpis(@Query() query: BusinessFilterDto) {
+    return this.businessService.getKpis(query);
+  }
+
 
   @Get(':id')
   findById(@Param('id') id: string) {
