@@ -128,11 +128,11 @@ export class AuthService {
       Date.now() + 7 * 24 * 60 * 60 * 1000,
     );
 
-    await this.refreshTokenService.create({
+    await this.refreshTokenService.upsert({
       userId: user.userId,
-      jti,
-      tokenHash,
-      expiresAt,
+          jti,
+          tokenHash,
+          expiresAt,
     });
 
     return refreshToken;

@@ -9,18 +9,27 @@ export class RefreshTokenService {
     private readonly mongo: MongoService,
   ) {}
 
-  async create(data: {
+  async upsert(data: {
     userId: string;
     jti: string;
     tokenHash: string;
     expiresAt: Date;
   }) {
-    return this.mongo.models.refreshToken.create({
-      userId: new Types.ObjectId(data.userId),
-      jti: data.jti,
-      tokenHash: data.tokenHash,
-      expiresAt: data.expiresAt,
-    });
+    return await this.mongo.models.refreshToken.findOneAndUpdate(
+      { userId: new Types.ObjectId(data.userId) },
+      {
+        $set: {
+          jti: data.jti,
+          tokenHash: data.tokenHash,
+          expiresAt: data.expiresAt,
+          revokedAt: null,
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+      },
+    );
   }
 
   async findByTokenHash(tokenHash: string) {
