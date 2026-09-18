@@ -49,30 +49,17 @@ export class BusinessController {
     return this.businessService.getStatus();
   }
 
-  @Get('city')
+  @Get('city/autocomplete')
   @ApiOperation({
-    summary: 'Get business city',
-    description: 'Returns cities.',
+    summary: 'Autocomplete city',
+    description: 'Returns city matching the search text.',
   })
   @ApiResponse({
     status: 200,
     description: 'City retrieved successfully.',
   })
-  async getCity() {
-    return this.businessService.getLocations('city');
-  }
-
-  @Get('state')
-  @ApiOperation({
-    summary: 'Get business state',
-    description: 'Returns the states.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'State retrieved successfully.',
-  })
-  async getState() {
-    return this.businessService.getLocations('state');
+  async getCity(@Query() query: BusinessAutocompleteDto) {
+    return this.businessService.getCityAutocomplete(query.search);
   }
 
   // @UseGuards(JwtAuthGuard, RolesGuard)

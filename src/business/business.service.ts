@@ -12,7 +12,8 @@ import { Business } from 'src/mongo/interfaces';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { BusinessFilterDto, BusinessKPIsDto } from './dto/get-business-filter.dto';
-import {BusinessResponse} from './interface/business-response'
+import {BusinessResponse} from './interface/business-response';
+import {BusinessKpiResponse} from './interface/kpis-response'
 import { BusinessStatus } from 'src/mongo/enums';
 
 @Injectable()
@@ -258,18 +259,37 @@ export class BusinessService {
     return business as Business[];
   }
 
-  async getLocations(locationType: string){
-    const data =
-      await this.mongo.models.business
-        .find({ isDeleted: false })
-        .select(locationType)
-        .sort({ [locationType]: 1 })
-        .lean()
-        .exec();
+  async getCityAutocomplete(search?: string){
+    this.logger.log(
+      `Fetching city autocomplete. Search: ${search || 'none'}`,
+    );
+    const filter: Record<string, any> = {};
 
-      const uniqueData = [...new Set(data.map(item => item[locationType]))];
+    if (search) {
+      filter.city = {
+        $regex: search,
+        $options: 'i',
+      };
+    }
 
-    return uniqueData;
+    const response = await this.mongo.models.business.aggregate([
+      { $match: filter},
+      {
+        $group: {   _id: '$city' },
+      },
+      {
+        $project: {
+          _id: 0,
+          city: '$_id',
+        },
+      },
+      {
+        $sort: { city: 1}
+      },
+      {$limit: 50,},
+    ]);
+
+    return response as Business[];
   }
 
   /**
@@ -292,12 +312,9 @@ export class BusinessService {
   /**
    * Get KPI suggestions for businesses
    */
-  async getKpis(query: BusinessKPIsDto): Promise<string[]> {
-    
-    this.logger.log(
-      `Fetching business KPIs`
-    );
-
+  async getKpis(query: BusinessKPIsDto): Promise<BusinessKpiResponse> {
+  
+    this.logger.log(`Fetching business KPIs`);
 
     const filter: Record<string, any> = this.filterforGetBusinesses(query);
     const matchStage = {
@@ -375,15 +392,25 @@ export class BusinessService {
       },
     }
 
-    const pipeline = [
-      matchStage,
-      groupStage,
-      projectStage
-    ];
 
-     const kpis = await this.mongo.models.business.aggregate(pipeline).exec();
+    const pipeline: any = [];
+    Object.keys(filter).length > 0 && pipeline.push(matchStage);
+    pipeline.push(groupStage);
+    pipeline.push(projectStage);
 
-    return kpis;
+    const kpis = await this.mongo.models.business.aggregate(pipeline).exec();
+    if (kpis.length > 0) {
+      return kpis[0];
+    }
+    else{
+      return ({
+        total: 0,
+        active: 0,
+        new: 0,
+        interested: 0,
+        won: 0
+      })
+    }
   }
 
   // GET ALL BUSINESSES
@@ -449,9 +476,7 @@ export class BusinessService {
 
     // By default, don't show deleted businesses
     if (isDeleted !== undefined) {
-      filter.isDeleted = isDeleted;
-    } else {
-      filter.isDeleted = false;
+      filter.isDeleted = isDeleted.toLowerCase() == 'true';
     }
 
     if (search) {

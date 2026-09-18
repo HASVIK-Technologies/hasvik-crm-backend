@@ -6,8 +6,10 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -21,7 +23,16 @@ import { CategoryFilterDto } from './dto/category-filter.dto';
 import { UpdateCategoryStatusDto } from './dto/update-category-status.dto';
 import { CategoryAutocompleteDto } from './dto/category-autocomplete.dto';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Permission } from '../auth/enums/permission.enum';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+
 @ApiTags('Categories')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('categories')
 export class CategoryController {
   constructor(
@@ -29,6 +40,7 @@ export class CategoryController {
   ) {}
   
   @Get('autocomplete')
+  @Permissions(Permission.CATEGORY_READ)
   @ApiOperation({
     summary: 'Autocomplete categories',
     description: 'Returns active categories matching the search text.',
@@ -45,6 +57,7 @@ export class CategoryController {
    * Create a new category
    */
   @Post()
+  @Permissions(Permission.CATEGORY_CREATE)
   @ApiOperation({
     summary: 'Create a new category',
     description: 'Creates a new business category.',
@@ -70,6 +83,7 @@ export class CategoryController {
    * Get all categories
    */
   @Get()
+  @Permissions(Permission.CATEGORY_READ)
   @ApiOperation({
     summary: 'Get categories',
     description: 'Returns a paginated list of categories.',
@@ -83,6 +97,7 @@ export class CategoryController {
    * Get category by ID
    */
   @Get(':id')
+  @Permissions(Permission.CATEGORY_READ)
   @ApiOperation({
     summary: 'Get category by ID',
     description: 'Returns a business category using its ID.',
@@ -109,6 +124,7 @@ export class CategoryController {
   /**
    * Update category
    */
+  @Patch(':id')
   @Patch(':id')
   @ApiOperation({
     summary: 'Update category',
@@ -145,6 +161,7 @@ export class CategoryController {
    * Update category status
    */
   @Patch(':id/status')
+  @Permissions(Permission.CATEGORY_UPDATE)
   @ApiOperation({
     summary: 'Update category status',
     description: 'Activates or deactivates a category.',
@@ -162,6 +179,7 @@ export class CategoryController {
     status: 404,
     description: 'Category not found.',
   })
+  @Permissions(Permission.CATEGORY_UPDATE)
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateCategoryStatusDto,

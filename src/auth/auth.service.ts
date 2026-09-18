@@ -76,7 +76,6 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      user: authenticatedUser,
     };
   }
 
@@ -267,7 +266,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken: newRefreshToken,
-      user: authenticatedUser,
+      //user: authenticatedUser,
     };
   }
 
