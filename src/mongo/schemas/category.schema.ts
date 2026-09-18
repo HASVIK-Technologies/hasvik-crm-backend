@@ -14,7 +14,7 @@ export const CategorySchema: Schema<Category> = new Schema<Category>(
       trim: true,
     },
 
-    isActive: {
+    isDeleted: {
       type: Boolean,
       default: true,
       index: true,

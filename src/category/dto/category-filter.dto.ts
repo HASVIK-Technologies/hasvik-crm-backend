@@ -37,7 +37,7 @@ export class CategoryFilterDto {
   })
   @IsOptional()
   @IsBoolean()
-  isActive?: boolean;
+  isDeleted?: boolean;
 
   @ApiPropertyOptional({
     example: 1,

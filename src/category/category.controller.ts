@@ -189,7 +189,7 @@ export class CategoryController {
 
     return this.categoryService.updateStatus(
       id,
-      dto.isActive,
+      dto.isDeleted,
       userId,
     );
   }

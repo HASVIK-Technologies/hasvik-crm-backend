@@ -7,5 +7,5 @@ export class UpdateCategoryStatusDto {
     description: 'Set category active status',
   })
   @IsBoolean()
-  isActive!: boolean;
+  isDeleted!: boolean;
 }
