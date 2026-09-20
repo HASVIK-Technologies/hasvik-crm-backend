@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -20,7 +22,14 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFilterDto } from './dto/get-user-filter.dto';
 import { UserAutocompleteDto } from './dto/user-autocomplete.dto';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/enums/permission.enum';
+
 @ApiTags('Users')
+//@ApiBearerAuth()
+//@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -34,6 +43,7 @@ export class UserController {
     status: 200,
     description: 'Users retrieved successfully.',
   })
+  //@Permissions(Permission.USER_READ)
   async autocomplete(@Query() query: UserAutocompleteDto) {
     return await this.userService.autocomplete(query.search);
   }
@@ -50,6 +60,7 @@ export class UserController {
     status: 409,
     description: 'User with the email or phone number already exists.',
   })
+  //@Permissions(Permission.USER_CREATE)
   async create(@Body() dto: CreateUserDto) {
     return await this.userService.create(dto);
   }
@@ -62,6 +73,7 @@ export class UserController {
     status: 200,
     description: 'Users retrieved successfully.',
   })
+  //@Permissions(Permission.USER_READ)
   async findAll(@Query() query: UserFilterDto) {
     return await this.userService.findAll(query);
   }
@@ -70,6 +82,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Get user by ID',
   })
+  //@Permissions(Permission.USER_READ)
   @ApiResponse({
     status: 200,
     description: 'User retrieved successfully.',
@@ -78,6 +91,7 @@ export class UserController {
     status: 404,
     description: 'User not found.',
   })
+  //@Permissions(Permission.USER_READ)
   async findById(@Param('id') id: string) {
     return await this.userService.findById(id);
   }
@@ -94,6 +108,7 @@ export class UserController {
     status: 404,
     description: 'User not found.',
   })
+  //@Permissions(Permission.USER_UPDATE)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -113,6 +128,7 @@ export class UserController {
     status: 404,
     description: 'User not found.',
   })
+  //@Permissions(Permission.USER_DELETE)
   async delete(@Param('id') id: string) {
     return await this.userService.deleteUser(id);
   }

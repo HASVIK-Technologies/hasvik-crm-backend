@@ -7,16 +7,29 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards
 } from '@nestjs/common';
+
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { BusinessFilterDto, BusinessKPIsDto } from './dto/get-business-filter.dto';
 import { BusinessAutocompleteDto } from './dto/business-autocomplete.dto';
-import { ApiResponse } from 'node_modules/@nestjs/swagger/dist/decorators/api-response.decorator';
-import { ApiOperation } from 'node_modules/@nestjs/swagger/dist/decorators/api-operation.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/enums/permission.enum';
 
+@ApiTags('Businesses')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('businesses')
 export class BusinessController {
   constructor(
@@ -24,6 +37,7 @@ export class BusinessController {
   ) {}
 
   @Get('autocomplete')
+  @Permissions(Permission.BUSINESS_READ)
   @ApiOperation({
     summary: 'Autocomplete businesses',
     description: 'Returns active businesses matching the search text.',
@@ -37,6 +51,7 @@ export class BusinessController {
   }
   
   @Get('status')
+  @Permissions(Permission.BUSINESS_READ)
   @ApiOperation({
     summary: 'Get business status',
     description: 'Returns the status of a specific business.',
@@ -50,6 +65,7 @@ export class BusinessController {
   }
 
   @Get('city/autocomplete')
+  @Permissions(Permission.BUSINESS_READ)
   @ApiOperation({
     summary: 'Autocomplete city',
     description: 'Returns city matching the search text.',
@@ -66,6 +82,7 @@ export class BusinessController {
   // @Post()
   // @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Post()
+  @Permissions(Permission.BUSINESS_CREATE)
   create(@Body() dto: CreateBusinessDto) {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';
@@ -74,11 +91,17 @@ export class BusinessController {
   }
 
   @Get()
+  @Permissions(Permission.BUSINESS_READ)
+  @ApiOperation({
+    summary: 'Get businesses',  
+    description: 'Returns a paginated list of businesses with optional filters.',
+  })
   async findAll(@Query() query: BusinessFilterDto) {
     return await this.businessService.findAll(query);
   }
 
   @Get('kpis')
+  @Permissions(Permission.BUSINESS_READ)
   @ApiOperation({
     summary: 'Get business KPIs',
     description: 'Returns key performance indicators for businesses.',
@@ -93,11 +116,37 @@ export class BusinessController {
 
 
   @Get(':id')
+  @Permissions(Permission.BUSINESS_READ)
+  @ApiOperation({
+    summary: 'Get business by ID',
+    description: 'Returns a business using its ID.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Business retrieved successfully.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Business not found.',
+  })
   async findById(@Param('id') id: string) {
     return await this.businessService.findById(id);
   }
 
   @Patch(':id')
+  @Permissions(Permission.BUSINESS_UPDATE)
+  @ApiOperation({
+    summary: 'Update business',
+    description: 'Updates a business with the provided details.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Business updated successfully.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Business not found.',
+  })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateBusinessDto,
@@ -109,6 +158,7 @@ export class BusinessController {
   }
 
   @Delete(':id')
+  @Permissions(Permission.BUSINESS_DELETE)
   async delete(@Param('id') id: string) {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';

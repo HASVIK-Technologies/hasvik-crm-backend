@@ -6,11 +6,13 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards
 } from '@nestjs/common';
+
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -20,7 +22,14 @@ import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
 import { FollowUpFilterDto } from './dto/get-follow-up-filter.dto';
 import { FollowUpService } from './followup.service';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/enums/permission.enum';
+
 @ApiTags('Follow Ups')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('follow-ups')
 export class FollowUpController {
   constructor(
@@ -31,6 +40,7 @@ export class FollowUpController {
    * Create Follow-up
    */
   @Post()
+  @Permissions(Permission.FOLLOW_UP_CREATE)
   @ApiOperation({
     summary: 'Create a new follow-up',
   })
@@ -59,6 +69,7 @@ export class FollowUpController {
     description:
       'Get follow-ups with optional filtering and pagination.',
   })
+  @Permissions(Permission.FOLLOW_UP_READ)
   @ApiResponse({
     status: 200,
     description: 'Follow-ups retrieved successfully.',
@@ -73,6 +84,7 @@ export class FollowUpController {
    * Get Follow-ups by Business
    */
   @Get('business/:businessId')
+  @Permissions(Permission.FOLLOW_UP_READ)
   @ApiOperation({
     summary: 'Get follow-up history for a business',
   })
@@ -93,6 +105,7 @@ export class FollowUpController {
    * Get Follow-ups by Assigned User
    */
   @Get('assigned/:userId')
+  @Permissions(Permission.FOLLOW_UP_READ)
   @ApiOperation({
     summary: 'Get follow-ups assigned to a user',
   })
@@ -113,6 +126,7 @@ export class FollowUpController {
    * Get Follow-up by ID
    */
   @Get(':id')
+  @Permissions(Permission.FOLLOW_UP_READ)
   @ApiOperation({
     summary: 'Get follow-up by ID',
   })
@@ -131,6 +145,7 @@ export class FollowUpController {
    * Update Follow-up
    */
   @Patch(':id')
+  @Permissions(Permission.FOLLOW_UP_UPDATE)
   @ApiOperation({
     summary: 'Update follow-up',
     description:

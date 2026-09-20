@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -20,7 +22,14 @@ import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { NoteFilterDto } from './dto/note-filter.dto';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/enums/permission.enum';
+
 @ApiTags('Notes')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('notes')
 export class NoteController {
   constructor(private readonly noteService: NoteService) {}
@@ -38,6 +47,7 @@ export class NoteController {
     status: 404,
     description: 'Referenced entity not found.',
   })
+  @Permissions(Permission.NOTE_CREATE)
   async create(@Body() dto: CreateNoteDto) {
     const userId = '6a8f3be16f9d9afdbc79974f'; // replace with authenticated user
     return await this.noteService.create(dto, userId);
@@ -52,6 +62,7 @@ export class NoteController {
     status: 200,
     description: 'Notes retrieved successfully.',
   })
+  @Permissions(Permission.NOTE_READ)
   async findAll(
     @Query() query: NoteFilterDto,
   ) {
@@ -76,6 +87,7 @@ export class NoteController {
     status: 404,
     description: 'Note not found.',
   })
+  @Permissions(Permission.NOTE_READ)
   async findById(@Param('id') id: string) {
     return await this.noteService.findById(id);
   }
@@ -98,6 +110,7 @@ export class NoteController {
     status: 404,
     description: 'Note not found.',
   })
+  @Permissions(Permission.NOTE_UPDATE)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateNoteDto,
@@ -124,6 +137,7 @@ export class NoteController {
     status: 404,
     description: 'Note not found.',
   })
+  @Permissions(Permission.NOTE_DELETE)
   async delete(@Param('id') id: string) {
     return await this.noteService.delete(id);
   }

@@ -26,9 +26,7 @@ import { CategoryAutocompleteDto } from './dto/category-autocomplete.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Permission } from '../auth/enums/permission.enum';
-import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @ApiTags('Categories')
 @ApiBearerAuth()
@@ -125,7 +123,7 @@ export class CategoryController {
    * Update category
    */
   @Patch(':id')
-  @Patch(':id')
+  @Permissions(Permission.CATEGORY_UPDATE)
   @ApiOperation({
     summary: 'Update category',
     description: 'Updates category name, description, or active status.',
