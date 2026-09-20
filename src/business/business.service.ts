@@ -295,18 +295,19 @@ export class BusinessService {
   /**
    * Get status suggestions for businesses
    */
-  async getStatus(): Promise<string[]> {
-    this.logger.log(
-      `Fetching business status`
+  getStatus(): Record<string, string> {
+
+    this.logger.log(`Fetching business status`);
+
+    const statusObject: Record<string, string> = Object.entries(BusinessStatus).reduce(
+      (acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>,
     );
 
-    
-    const status = Object.keys(BusinessStatus);
-    this.logger.log(
-      `Business status completed. Count: ${status.length}`,
-    );
-
-    return status;
+    return statusObject;
   }
 
   /**

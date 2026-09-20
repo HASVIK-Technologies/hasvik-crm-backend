@@ -44,7 +44,7 @@ export class FollowUpController {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';
 
-    return this.followUpService.create(
+    return await this.followUpService.create(
       dto,
       userId,
     );
@@ -66,7 +66,7 @@ export class FollowUpController {
   async findAll(
     @Query() query: FollowUpFilterDto,
   ) {
-    return this.followUpService.findAll(query);
+    return await this.followUpService.findAll(query);
   }
 
   /**
@@ -84,7 +84,7 @@ export class FollowUpController {
   async findByBusiness(
     @Param('businessId') businessId: string,
   ) {
-    return this.followUpService.findByBusiness(
+    return await this.followUpService.findByBusiness(
       businessId,
     );
   }
@@ -104,7 +104,7 @@ export class FollowUpController {
   async findByAssignedUser(
     @Param('userId') userId: string,
   ) {
-    return this.followUpService.findByAssignedUser(
+    return await this.followUpService.findByAssignedUser(
       userId,
     );
   }
@@ -124,7 +124,7 @@ export class FollowUpController {
   async findById(
     @Param('id') id: string,
   ) {
-    return this.followUpService.findById(id);
+    return await this.followUpService.findById(id);
   }
 
   /**
@@ -145,7 +145,7 @@ export class FollowUpController {
     @Param('id') id: string,
     @Body() dto: UpdateFollowUpDto,
   ) {
-    return this.followUpService.update(
+    return await this.followUpService.update(
       id,
       dto,
     );

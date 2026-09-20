@@ -35,7 +35,7 @@ export class UserController {
     description: 'Users retrieved successfully.',
   })
   async autocomplete(@Query() query: UserAutocompleteDto) {
-    return this.userService.autocomplete(query.search);
+    return await this.userService.autocomplete(query.search);
   }
 
   @Post()
@@ -51,7 +51,7 @@ export class UserController {
     description: 'User with the email or phone number already exists.',
   })
   async create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto);
+    return await this.userService.create(dto);
   }
 
   @Get()
@@ -63,7 +63,7 @@ export class UserController {
     description: 'Users retrieved successfully.',
   })
   async findAll(@Query() query: UserFilterDto) {
-    return this.userService.findAll(query);
+    return await this.userService.findAll(query);
   }
 
   @Get(':id')
@@ -79,7 +79,7 @@ export class UserController {
     description: 'User not found.',
   })
   async findById(@Param('id') id: string) {
-    return this.userService.findById(id);
+    return await this.userService.findById(id);
   }
 
   @Patch(':id')
@@ -98,7 +98,7 @@ export class UserController {
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.userService.update(id, dto);
+    return await this.userService.update(id, dto);
   }
 
   @Delete(':id')
@@ -114,6 +114,6 @@ export class UserController {
     description: 'User not found.',
   })
   async delete(@Param('id') id: string) {
-    return this.userService.deleteUser(id);
+    return await this.userService.deleteUser(id);
   }
 }

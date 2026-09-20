@@ -50,7 +50,7 @@ export class CategoryController {
     description: 'Categories retrieved successfully.',
   })
   async autocomplete(@Query() query: CategoryAutocompleteDto) {
-    return this.categoryService.autocomplete(query.search);
+    return await this.categoryService.autocomplete(query.search);
   }
 
   /**
@@ -76,7 +76,7 @@ export class CategoryController {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';
 
-    return this.categoryService.create(dto, userId);
+    return await this.categoryService.create(dto, userId);
   }
 
   /**
@@ -89,7 +89,7 @@ export class CategoryController {
     description: 'Returns a paginated list of categories.',
   })
   async findAll(@Query() query: CategoryFilterDto) {
-    return this.categoryService.findAll(query);
+    return await this.categoryService.findAll(query);
   }
 
 
@@ -118,7 +118,7 @@ export class CategoryController {
   async findById(
     @Param('id') id: string,
   ) {
-    return this.categoryService.findById(id);
+    return await this.categoryService.findById(id);
   }
 
   /**
@@ -154,7 +154,7 @@ export class CategoryController {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';
 
-    return this.categoryService.update(id, dto, userId);
+    return await this.categoryService.update(id, dto, userId);
   }
 
   /**
@@ -187,7 +187,7 @@ export class CategoryController {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';
 
-    return this.categoryService.updateStatus(
+    return await this.categoryService.updateStatus(
       id,
       dto.isDeleted,
       userId,

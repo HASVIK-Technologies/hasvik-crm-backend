@@ -18,7 +18,6 @@ import {
 import { NoteService } from './note.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
-import { NoteEntityType } from '../mongo/enums';
 import { NoteFilterDto } from './dto/note-filter.dto';
 
 @ApiTags('Notes')
@@ -41,7 +40,7 @@ export class NoteController {
   })
   async create(@Body() dto: CreateNoteDto) {
     const userId = '6a8f3be16f9d9afdbc79974f'; // replace with authenticated user
-    return this.noteService.create(dto, userId);
+    return await this.noteService.create(dto, userId);
   }
 
   @Get()
@@ -56,7 +55,7 @@ export class NoteController {
   async findAll(
     @Query() query: NoteFilterDto,
   ) {
-    return this.noteService.findAll(query);
+    return await this.noteService.findAll(query);
   }
 
   @Get(':id')
@@ -78,7 +77,7 @@ export class NoteController {
     description: 'Note not found.',
   })
   async findById(@Param('id') id: string) {
-    return this.noteService.findById(id);
+    return await this.noteService.findById(id);
   }
 
   @Patch(':id')
@@ -104,7 +103,7 @@ export class NoteController {
     @Body() dto: UpdateNoteDto,
   ) {
     const userId = '6a8f3be16f9d9afdbc79974f'; // replace with authenticated user
-    return this.noteService.update(id, dto, userId);
+    return await this.noteService.update(id, dto, userId);
   }
 
   @Delete(':id')
@@ -126,6 +125,6 @@ export class NoteController {
     description: 'Note not found.',
   })
   async delete(@Param('id') id: string) {
-    return this.noteService.delete(id);
+    return await this.noteService.delete(id);
   }
 }

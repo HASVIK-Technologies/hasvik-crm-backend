@@ -33,7 +33,7 @@ export class BusinessController {
     description: 'Businesses retrieved successfully.',
   })
   async autocomplete(@Query() query: BusinessAutocompleteDto) {
-    return this.businessService.autocomplete(query.search);
+    return await this.businessService.autocomplete(query.search);
   }
   
   @Get('status')
@@ -59,7 +59,7 @@ export class BusinessController {
     description: 'City retrieved successfully.',
   })
   async getCity(@Query() query: BusinessAutocompleteDto) {
-    return this.businessService.getCityAutocomplete(query.search);
+    return await this.businessService.getCityAutocomplete(query.search);
   }
 
   // @UseGuards(JwtAuthGuard, RolesGuard)
@@ -74,8 +74,8 @@ export class BusinessController {
   }
 
   @Get()
-  findAll(@Query() query: BusinessFilterDto) {
-    return this.businessService.findAll(query);
+  async findAll(@Query() query: BusinessFilterDto) {
+    return await this.businessService.findAll(query);
   }
 
   @Get('kpis')
@@ -88,31 +88,31 @@ export class BusinessController {
     description: 'Businesses retrieved successfully.',
   })
   async getKpis(@Query() query: BusinessKPIsDto) {
-    return this.businessService.getKpis(query);
+    return await this.businessService.getKpis(query);
   }
 
 
   @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.businessService.findById(id);
+  async findById(@Param('id') id: string) {
+    return await this.businessService.findById(id);
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() dto: UpdateBusinessDto,
   ) {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';
     
-    return this.businessService.update(id, dto, userId);
+    return await this.businessService.update(id, dto, userId);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string) {
     // Replace with authenticated user ID
     const userId = '6a8f3be16f9d9afdbc79974f';
 
-    return this.businessService.delete(id, userId);
+    return await this.businessService.delete(id, userId);
   }
 }
