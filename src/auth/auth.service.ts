@@ -13,7 +13,7 @@ import { RefreshTokenService } from '../refresh-token/refresh-token.service';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 
 interface RefreshTokenPayload {
-  sub: string;
+  userId: string;
   email: string;
   role: UserRole;
   jti: string;
@@ -86,7 +86,7 @@ export class AuthService {
     user: AuthenticatedUser,
   ): Promise<string> {
     const payload = {
-      sub: user.userId,
+      userId: user.userId,
       email: user.email,
       role: user.role,
     };
@@ -107,7 +107,7 @@ export class AuthService {
     const jti = randomUUID();
 
     const payload = {
-      sub: user.userId,
+      userId: user.userId,
       email: user.email,
       role: user.role,
       jti,
@@ -137,14 +137,8 @@ export class AuthService {
     return refreshToken;
   }
 
-  /**
-   * Refresh access token and rotate refresh token.
-   */
-  async refresh(refreshUser: RefreshUser) {
-    if (
-      !refreshUser?.userId ||
-      !refreshUser?.refreshToken
-    ) {
+  async refresh(refreshToken: string) {
+    if (!refreshToken) {
       throw new UnauthorizedException(
         'Invalid refresh token',
       );
@@ -155,40 +149,25 @@ export class AuthService {
     try {
       payload =
         await this.jwtService.verifyAsync<RefreshTokenPayload>(
-          refreshUser.refreshToken,
+          refreshToken,
           {
             secret: process.env.JWT_REFRESH_SECRET,
           },
         );
-    } catch {
+    } catch (error) {
+
       throw new UnauthorizedException(
         'Invalid or expired refresh token',
       );
     }
 
-    if (!payload?.sub || !payload?.jti) {
+    if (!payload?.userId || !payload?.jti) {
       throw new UnauthorizedException(
         'Invalid refresh token',
       );
     }
 
-    /*
-     * Make sure the token belongs to the authenticated
-     * user returned by the refresh strategy.
-     */
-    if (payload.sub !== refreshUser.userId) {
-      throw new UnauthorizedException(
-        'Invalid refresh token',
-      );
-    }
-
-    /*
-     * Find the refresh-token session using
-     * the hashed raw token.
-     */
-    const tokenHash = this.hashToken(
-      refreshUser.refreshToken,
-    );
+    const tokenHash = this.hashToken(refreshToken);
 
     const storedToken =
       await this.refreshTokenService.findByTokenHash(
@@ -201,9 +180,6 @@ export class AuthService {
       );
     }
 
-    /*
-     * Make sure the JTI also matches.
-     */
     if (storedToken.jti !== payload.jti) {
       throw new UnauthorizedException(
         'Invalid refresh token',
@@ -227,7 +203,7 @@ export class AuthService {
      * are reflected when issuing new tokens.
      */
     const user = await this.userService.findById(
-      refreshUser.userId,
+      payload.userId,
     );
 
     if (!user || user.isDeleted) {

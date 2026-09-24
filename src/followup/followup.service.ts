@@ -3,7 +3,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { isObjectIdOrHexString } from 'mongoose';
+import { isObjectIdOrHexString, Types } from 'mongoose';
 
 import { MongoService } from '../mongo/mongo.service';
 import { FollowUp } from '../mongo/interfaces';
@@ -11,7 +11,9 @@ import { FollowUp } from '../mongo/interfaces';
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
 import { FollowUpFilterDto } from './dto/get-follow-up-filter.dto';
-import { NoteEntityType } from '../mongo/enums';
+import { FollowUpStatus, NoteEntityType } from '../mongo/enums';
+import { FollowUpKpiResponse } from './interface/kpis-response';
+import moment from 'moment-timezone';
 
 @Injectable()
 export class FollowUpService {
@@ -366,5 +368,121 @@ export class FollowUpService {
     );
 
     return followUp as FollowUp;
+  }
+
+  async getKpis(): Promise<FollowUpKpiResponse> {
+    this.logger.log(
+      `Fetching follow-up KPIs.`,
+    );
+    
+    const startOfToday = moment.utc().startOf('day');
+    const startOfTomorrow = moment.utc().add(1, 'day').startOf('day');
+
+    const match: Record<string, any> = {};
+
+    const pipeline: any = [
+      {
+        $match: match,
+      },
+
+      {
+        $facet: {
+          // Total Follow-ups
+          total: [
+            {
+              $count: 'count',
+            },
+          ],
+
+          // Today's Follow-ups
+          today: [
+            {
+              $match: {
+                scheduledAt: {
+                  $gte: startOfToday.toDate(),
+                  $lt: startOfTomorrow.toDate(),
+                },
+              },
+            },
+            {
+              $count: 'count',
+            },
+          ],
+
+          // Upcoming Follow-ups
+          upcoming: [
+            {
+              $match: {
+                scheduledAt: {
+                  $gte: startOfTomorrow.toDate(),
+                },
+                status: FollowUpStatus.SCHEDULED,
+              },
+            },
+            {
+              $count: 'count',
+            },
+          ],
+
+          // Overdue Follow-ups
+          overdue: [
+            {
+              $match: {
+                scheduledAt: {
+                  $lt: startOfToday.toDate(),
+                },
+                status: FollowUpStatus.SCHEDULED,
+              },
+            },
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      },
+
+      {
+        $project: {
+          total: {
+            $ifNull: [
+              { $arrayElemAt: ['$total.count', 0] },
+              0,
+            ],
+          },
+
+          today: {
+            $ifNull: [
+              { $arrayElemAt: ['$today.count', 0] },
+              0,
+            ],
+          },
+
+          upcoming: {
+            $ifNull: [
+              { $arrayElemAt: ['$upcoming.count', 0] },
+              0,
+            ],
+          },
+
+          overdue: {
+            $ifNull: [
+              { $arrayElemAt: ['$overdue.count', 0] },
+              0,
+            ],
+          },
+        },
+      },
+    ];
+    
+    const [result] = await this.mongo.models.followUp.aggregate(pipeline);
+
+    return (
+      result ?? {
+        total: 0,
+        today: 0,
+        upcoming: 0,
+        overdue: 0,
+      }
+    );
   }
 }

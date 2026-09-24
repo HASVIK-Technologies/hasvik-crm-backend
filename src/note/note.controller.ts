@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards
 } from '@nestjs/common';
 import {
@@ -48,8 +49,8 @@ export class NoteController {
     description: 'Referenced entity not found.',
   })
   @Permissions(Permission.NOTE_CREATE)
-  async create(@Body() dto: CreateNoteDto) {
-    const userId = '6a8f3be16f9d9afdbc79974f'; // replace with authenticated user
+  async create(@Body() dto: CreateNoteDto, @Req() req: any) {
+    const userId = req.user.userId;
     return await this.noteService.create(dto, userId);
   }
 
@@ -114,8 +115,9 @@ export class NoteController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateNoteDto,
+    @Req() req: any
   ) {
-    const userId = '6a8f3be16f9d9afdbc79974f'; // replace with authenticated user
+    const userId = req.user.userId;
     return await this.noteService.update(id, dto, userId);
   }
 

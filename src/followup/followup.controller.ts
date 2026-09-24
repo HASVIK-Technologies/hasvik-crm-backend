@@ -6,8 +6,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards
 } from '@nestjs/common';
+import { Request } from 'express';
 
 import {
   ApiBearerAuth,
@@ -49,10 +51,10 @@ export class FollowUpController {
     description: 'Follow-up created successfully.',
   })
   async create(
-    @Body() dto: CreateFollowUpDto,
+    @Body() dto: CreateFollowUpDto, @Req() req: any
   ) {
     // Replace with authenticated user ID
-    const userId = '6a8f3be16f9d9afdbc79974f';
+    const userId = req.user.userId;
 
     return await this.followUpService.create(
       dto,
@@ -120,6 +122,20 @@ export class FollowUpController {
     return await this.followUpService.findByAssignedUser(
       userId,
     );
+  }
+
+  @Get('kpis')
+  @Permissions(Permission.FOLLOW_UP_READ)
+  @ApiOperation({
+    summary: 'Get follow-up KPIs',
+    description: 'Returns key performance indicators for follow-ups.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Follow-ups retrieved successfully.',
+  })
+  async getKpis() {
+    return await this.followUpService.getKpis();
   }
 
   /**

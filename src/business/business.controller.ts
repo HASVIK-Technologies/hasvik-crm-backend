@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards
 } from '@nestjs/common';
 
@@ -83,9 +84,9 @@ export class BusinessController {
   // @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Post()
   @Permissions(Permission.BUSINESS_CREATE)
-  create(@Body() dto: CreateBusinessDto) {
+  create(@Body() dto: CreateBusinessDto, @Req() req: any) {
     // Replace with authenticated user ID
-    const userId = '6a8f3be16f9d9afdbc79974f';
+    const userId = req.user.userId;
 
     return this.businessService.create(dto, userId);
   }
@@ -150,19 +151,18 @@ export class BusinessController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateBusinessDto,
+    @Req() req: any
   ) {
     // Replace with authenticated user ID
-    const userId = '6a8f3be16f9d9afdbc79974f';
-    
+    const userId = req.user.userId;
     return await this.businessService.update(id, dto, userId);
   }
 
   @Delete(':id')
   @Permissions(Permission.BUSINESS_DELETE)
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string, @Req() req: any) {
     // Replace with authenticated user ID
-    const userId = '6a8f3be16f9d9afdbc79974f';
-
+    const userId = req.user.userId;
     return await this.businessService.delete(id, userId);
   }
 }

@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -69,10 +70,10 @@ export class CategoryController {
     description: 'Category already exists.',
   })
   async create(
-    @Body() dto: CreateCategoryDto,
+    @Body() dto: CreateCategoryDto, @Req() req: any
   ) {
     // Replace with authenticated user ID
-    const userId = '6a8f3be16f9d9afdbc79974f';
+    const userId = req.user.userId;
 
     return await this.categoryService.create(dto, userId);
   }
@@ -148,10 +149,10 @@ export class CategoryController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
+    @Req() req: any
   ) {
     // Replace with authenticated user ID
-    const userId = '6a8f3be16f9d9afdbc79974f';
-
+    const userId = req.user.userId;
     return await this.categoryService.update(id, dto, userId);
   }
 
@@ -181,10 +182,10 @@ export class CategoryController {
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateCategoryStatusDto,
+    @Req() req: any
   ) {
     // Replace with authenticated user ID
-    const userId = '6a8f3be16f9d9afdbc79974f';
-
+    const userId = req.user.userId;
     return await this.categoryService.updateStatus(
       id,
       dto.isDeleted,

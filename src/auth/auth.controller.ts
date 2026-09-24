@@ -20,6 +20,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -61,7 +62,6 @@ export class AuthController {
   }
 
   @Post('refresh')
-  @UseGuards(AuthGuard('refresh-token'))
   @ApiOperation({
     summary: 'Refresh access token',
   })
@@ -73,28 +73,30 @@ export class AuthController {
     status: 401,
     description: 'Invalid or expired refresh token.',
   })
+  @UseGuards(RefreshTokenGuard)
   async refresh(
     @Req()
     request: Request & {
-      user: { userId: string; refreshToken: string };
+      user: {
+        refreshToken: string;
+      };
     },
     @Res({ passthrough: true }) response: Response,
   ) {
-
-    const result = await this.authService.refresh(
-      request.user,
+    const result:any = await this.authService.refresh(
+      request.user.refreshToken,
     );
 
     response.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      path: this.cookiePath,
+      path: '/auth',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return {
-      accessToken: result.accessToken
+      accessToken: result.accessToken,
     };
   }
 

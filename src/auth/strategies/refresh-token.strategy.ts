@@ -9,7 +9,7 @@ import { Request } from 'express';
 import { UserRole } from '../../mongo/enums';
 
 interface RefreshTokenPayload {
-  sub: string;
+  userId: string;
   email: string;
   role: UserRole;
   jti: string;
@@ -47,14 +47,14 @@ export class RefreshTokenStrategy extends PassportStrategy(
       );
     }
 
-    if (!payload?.sub || !payload?.jti) {
+    if (!payload?.userId || !payload?.jti) {
       throw new UnauthorizedException(
         'Invalid refresh token',
       );
     }
 
     return {
-      userId: payload.sub,
+      userId: payload.userId,
       refreshToken,
     };
   }
