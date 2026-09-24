@@ -21,13 +21,14 @@ import {
 
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
-import { FollowUpFilterDto } from './dto/get-follow-up-filter.dto';
+import { FollowUpFilterDto, FollowUpKPIsDto } from './dto/get-follow-up-filter.dto';
 import { FollowUpService } from './followup.service';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/enums/permission.enum';
+import { UpdateFollowUpStatusDto } from './dto/Update-follow-up-status.dto';
 
 @ApiTags('Follow Ups')
 @ApiBearerAuth()
@@ -134,8 +135,8 @@ export class FollowUpController {
     status: 200,
     description: 'Follow-ups retrieved successfully.',
   })
-  async getKpis() {
-    return await this.followUpService.getKpis();
+  async getKpis(@Query() query: FollowUpKPIsDto) {
+    return await this.followUpService.getKpis(query);
   }
 
   /**
@@ -157,6 +158,22 @@ export class FollowUpController {
     return await this.followUpService.findById(id);
   }
 
+  @Patch(':id/status')
+  @Permissions(Permission.FOLLOW_UP_UPDATE)
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateFollowUpStatusDto,
+    @Req() req: any
+  ) {
+    const userId = req.user.userId;
+
+    return this.followUpService.updateStatus(
+      id,
+      dto.status,
+      userId
+    );
+  }
+
   /**
    * Update Follow-up
    */
@@ -175,10 +192,14 @@ export class FollowUpController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateFollowUpDto,
+    @Req() req: any
   ) {
+
+    const userId = req.user.userId;
     return await this.followUpService.update(
       id,
       dto,
+      userId
     );
   }
 }

@@ -10,7 +10,7 @@ import { FollowUp } from '../mongo/interfaces';
 
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
-import { FollowUpFilterDto } from './dto/get-follow-up-filter.dto';
+import { FollowUpFilterDto, FollowUpKPIsDto } from './dto/get-follow-up-filter.dto';
 import { FollowUpStatus, NoteEntityType } from '../mongo/enums';
 import { FollowUpKpiResponse } from './interface/kpis-response';
 import moment from 'moment-timezone';
@@ -90,17 +90,12 @@ export class FollowUpService {
       ...data,
       createdBy: userId,
     });
-
-    
-
-    
-
   
     let savedFollowUp = await followUp.save();
     await savedFollowUp.populate([
       {
         path: 'businessId',
-        select: '_id name',
+        select: '_id name city',
       },
       {
         path: 'assignedTo',
@@ -111,8 +106,6 @@ export class FollowUpService {
     this.logger.log(
       `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}`,
     );
-
-    
 
     if(data.notes) {
       // Create note for the follow-up
@@ -151,7 +144,7 @@ export class FollowUpService {
 
     const followUp = await this.mongo.models.followUp
       .findById(id)
-      .populate('businessId', '_id name')
+      .populate('businessId', '_id name city')
       .populate('assignedTo', '_id fullName')
       .lean()
       .exec();
@@ -191,62 +184,18 @@ export class FollowUpService {
     data: FollowUpResponse[];
     total: number;
   }> {
-    const {
-      businessId,
-      assignedTo,
-      status,
-      type,
-      fromDate,
-      toDate,
-    } = query;
+
+    const filter: Record<string, any> = this.filterforGetFollowUps(query);
 
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
-
-    this.logger.log(
-      `Fetching follow-ups. Page: ${page}, Limit: ${limit}, Business ID: ${businessId || 'none'}, Assigned To: ${assignedTo || 'none'}`,
-    );
-
-    const filter: Record<string, any> = {};
-
-    if (businessId) {
-      filter.businessId = businessId;
-    }
-
-    if (assignedTo) {
-      filter.assignedTo = assignedTo;
-    }
-
-    if (status) {
-      filter.status = status;
-    }
-
-    if (type) {
-      filter.type = type;
-    }
-
-    // Date range
-    if (fromDate || toDate) {
-      filter.scheduledAt = {};
-
-      if (fromDate) {
-        filter.scheduledAt.$gte =
-          new Date(fromDate);
-      }
-
-      if (toDate) {
-        filter.scheduledAt.$lte =
-          new Date(toDate);
-      }
-    }
-
     const skip = (page - 1) * limit;
 
     const [followUps, total] =
       await Promise.all([
         this.mongo.models.followUp
           .find(filter)
-          .populate('businessId', '_id name')
+          .populate('businessId', '_id name city')
           .populate('assignedTo', '_id fullName')
           .sort({ scheduledAt: 1 })
           .skip(skip)
@@ -291,7 +240,7 @@ export class FollowUpService {
         .find({
           businessId,
         })
-        .populate('businessId', '_id name')
+        .populate('businessId', '_id name city')
         .populate('assignedTo', '_id fullName')
         .sort({
           scheduledAt: -1,
@@ -304,6 +253,58 @@ export class FollowUpService {
     );
     return followUps.map((followup) => this.mapFollowUpResponse(followup));
   }
+
+  filterforGetFollowUps(query: FollowUpFilterDto): Record<string, any> {
+    const {
+      businessId,
+      assignedTo,
+      status,
+      type,
+      fromDate,
+      toDate
+    } = query;
+
+    const filter: Record<string, any> = {};
+
+    if (businessId) {
+      filter.businessId = businessId;
+    }
+
+    if (assignedTo) {
+      filter.assignedTo = assignedTo;
+    }
+
+    if (status === FollowUpStatus.OVERDUE) {
+      filter.status = FollowUpStatus.SCHEDULED;
+      filter.scheduledAt = {
+        $lt: moment.utc().toDate(),
+      };
+    } else if (status) {
+      filter.status = status;
+    }
+
+    if (type) {
+      filter.type = type;
+    }
+
+    // Date range
+    if (fromDate || toDate) {
+      filter.scheduledAt = {};
+
+      if (fromDate) {
+        filter.scheduledAt.$gte =
+          new Date(fromDate);
+      }
+
+      if (toDate) {
+        filter.scheduledAt.$lte =
+          new Date(toDate);
+      }
+    }
+
+    return filter;
+  }
+  
 
   // GET USER FOLLOW-UPS
   async findByAssignedUser(
@@ -328,7 +329,7 @@ export class FollowUpService {
         .find({
           assignedTo: userId,
         })
-        .populate('businessId', '_id name')
+        .populate('businessId', '_id name city')
         .populate('assignedTo', '_id fullName')
         .sort({
           scheduledAt: 1,
@@ -347,6 +348,7 @@ export class FollowUpService {
   async update(
     id: string,
     dto: UpdateFollowUpDto,
+    userId: string,
   ): Promise<FollowUpResponse> {
     this.logger.log(
       `Updating follow-up. Follow-up ID: ${id}`,
@@ -372,7 +374,7 @@ export class FollowUpService {
             runValidators: true,
           },
         )
-        .populate('businessId', '_id name')
+        .populate('businessId', '_id name city')
         .populate('assignedTo', '_id fullName')
         .lean()
         .exec();
@@ -394,7 +396,7 @@ export class FollowUpService {
     return this.mapFollowUpResponse(followUp);
   }
 
-  async getKpis(): Promise<FollowUpKpiResponse> {
+  async getKpis(query: FollowUpKPIsDto): Promise<FollowUpKpiResponse> {
     this.logger.log(
       `Fetching follow-up KPIs.`,
     );
@@ -402,11 +404,11 @@ export class FollowUpService {
     const startOfToday = moment.utc().startOf('day');
     const startOfTomorrow = moment.utc().add(1, 'day').startOf('day');
 
-    const match: Record<string, any> = {};
+    const filter: Record<string, any> = this.filterforGetFollowUps(query);
 
     const pipeline: any = [
       {
-        $match: match,
+        $match: filter,
       },
 
       {
@@ -452,16 +454,14 @@ export class FollowUpService {
           overdue: [
             {
               $match: {
-                scheduledAt: {
-                  $lt: startOfToday.toDate(),
-                },
                 status: FollowUpStatus.SCHEDULED,
+                scheduledAt: {
+                  $lt: moment.utc().toDate(),
+                },
               },
             },
-            {
-              $count: 'count',
-            },
-          ],
+            { $count: 'count' },
+          ]
         },
       },
 
@@ -510,13 +510,93 @@ export class FollowUpService {
     );
   }
 
-  private mapFollowUpResponse(followup: any): FollowUpResponse {
-      const { businessId, assignedTo, ...followUpData } = followup;
-  
-      return {
-        ...followUpData,
-        business: businessId,
-        assignee: assignedTo,
-      };
+  async updateStatus(
+    id: string,
+    status: FollowUpStatus.COMPLETED | FollowUpStatus.CANCELLED,
+    userId: string,
+  ): Promise<FollowUpResponse> {
+    this.logger.log(
+      `Updating follow-up status. Follow-up ID: ${id}, Status: ${status}, User ID: ${userId}`,
+    );
+
+    if (!isObjectIdOrHexString(id)) {
+      this.logger.warn(`Invalid follow-up ID: ${id}`);
+      throw new NotFoundException('Invalid follow-up id.');
     }
+
+    if (!isObjectIdOrHexString(userId)) {
+      this.logger.warn(`Invalid user ID: ${userId}`);
+      throw new NotFoundException('Invalid user id.');
+    }
+
+    const update: Record<string, any> = {
+      status,
+      updatedBy: new Types.ObjectId(userId),
+    };
+
+    if (status === FollowUpStatus.COMPLETED) {
+      update.completedAt = new Date();
+    }
+
+    if (status === FollowUpStatus.CANCELLED) {
+      update.completedAt = null;
+    }
+
+    const followUp =
+      await this.mongo.models.followUp
+        .findOneAndUpdate(
+          {
+            _id: id,
+            status: FollowUpStatus.SCHEDULED,
+          },
+          {
+            $set: update,
+          },
+          {
+            new: true,
+            runValidators: true,
+          },
+        )
+        .populate('businessId', '_id name city')
+        .populate('assignedTo', '_id fullName')
+        .lean()
+        .exec();
+
+    if (!followUp) {
+      throw new NotFoundException(
+        'Follow-up not found or cannot be updated.',
+      );
+    }
+
+    this.logger.log(
+      `Follow-up status updated successfully. Follow-up ID: ${id}, Status: ${status}`,
+    );
+
+    return this.mapFollowUpResponse(followUp);
+  }
+
+  private mapFollowUpResponse(followup: FollowUp): FollowUpResponse {
+    const { businessId, assignedTo, ...followUpData } = followup;
+
+    return {
+      ...followUpData,
+      business: businessId,
+      assignee: assignedTo,
+      status: this.getRuntimeStatus(followup.status, followup.scheduledAt,), 
+    } as unknown as FollowUpResponse;
+  }
+
+  private getRuntimeStatus(
+    status: FollowUpStatus,
+    scheduledAt: Date,
+  ): FollowUpStatus {
+    if (
+      status === FollowUpStatus.SCHEDULED &&
+      moment.utc(scheduledAt).isBefore(moment.utc())
+    ) {
+      return FollowUpStatus.OVERDUE;
+    }
+
+    return status;
+  }
 }

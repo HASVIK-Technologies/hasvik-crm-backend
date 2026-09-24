@@ -31,6 +31,12 @@ export const FollowUpSchema: Schema<FollowUp> = new Schema<FollowUp>(
       index: true,
     },
 
+    reminderInMinutes: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+
     status: {
       type: String,
       enum: Object.values(FollowUpStatus),

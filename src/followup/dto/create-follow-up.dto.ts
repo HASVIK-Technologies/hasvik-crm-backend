@@ -1,9 +1,11 @@
 import {
   IsDateString,
   IsEnum,
+  IsInt,
   IsMongoId,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { FollowUpStatus, FollowUpType } from 'src/mongo/enums';
@@ -40,14 +42,14 @@ export class CreateFollowUpDto {
   scheduledAt!: string;
 
   @ApiPropertyOptional({
-    enum: FollowUpStatus,
-    example: FollowUpStatus.SCHEDULED,
-    default: FollowUpStatus.SCHEDULED,
-    description: 'Current status of the follow-up',
+    example: 30,
+    description: 'Reminder time before the scheduled follow-up, in minutes',
+    minimum: 0,
   })
   @IsOptional()
-  @IsEnum(FollowUpStatus)
-  status?: FollowUpStatus;
+  @IsInt()
+  @Min(0)
+  reminderInMinutes?: number;
 
   @ApiPropertyOptional({
     example: 'Discuss pricing and product requirements',

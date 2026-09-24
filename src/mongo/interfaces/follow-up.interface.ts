@@ -12,6 +12,8 @@ export interface FollowUp {
 
   scheduledAt: Date;
 
+  reminderInMinutes?: number;
+
   status: FollowUpStatus;
 
   completedAt?: Date;

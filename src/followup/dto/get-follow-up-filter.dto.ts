@@ -5,7 +5,7 @@ import {
   IsNumberString,
   IsOptional,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 
 import {
   FollowUpStatus,
@@ -81,3 +81,8 @@ export class FollowUpFilterDto {
   @IsNumberString()
   limit?: string;
 }
+
+export class FollowUpKPIsDto extends OmitType(
+  FollowUpFilterDto,
+  ['page', 'limit'] as const,
+) {}
