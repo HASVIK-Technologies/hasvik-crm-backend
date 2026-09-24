@@ -14,6 +14,7 @@ import { FollowUpFilterDto } from './dto/get-follow-up-filter.dto';
 import { FollowUpStatus, NoteEntityType } from '../mongo/enums';
 import { FollowUpKpiResponse } from './interface/kpis-response';
 import moment from 'moment-timezone';
+import { FollowUpResponse } from './interface/followup-response';
 
 @Injectable()
 export class FollowUpService {
@@ -27,7 +28,7 @@ export class FollowUpService {
   async create(
     data: CreateFollowUpDto,
     userId: string,
-  ): Promise<FollowUp> {
+  ): Promise<FollowUpResponse> {
     this.logger.log(
       `Creating follow-up. Business ID: ${data.businessId}, Assigned To: ${data.assignedTo}, User ID: ${userId}`,
     );
@@ -90,11 +91,28 @@ export class FollowUpService {
       createdBy: userId,
     });
 
-    const savedFollowUp = await followUp.save();
+    
+
+    
+
+  
+    let savedFollowUp = await followUp.save();
+    await savedFollowUp.populate([
+      {
+        path: 'businessId',
+        select: '_id name',
+      },
+      {
+        path: 'assignedTo',
+        select: '_id fullName',
+      },
+    ]);
 
     this.logger.log(
       `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}`,
     );
+
+    
 
     if(data.notes) {
       // Create note for the follow-up
@@ -110,13 +128,13 @@ export class FollowUpService {
       );
     }
 
-    return savedFollowUp;
+    return this.mapFollowUpResponse(savedFollowUp.toObject());
   }
 
   // GET FOLLOW-UP BY ID
   async findById(
     id: string,
-  ): Promise<FollowUp & { notes: any[] }> {
+  ): Promise<FollowUpResponse & { notes: any[] }> {
     this.logger.log(
       `Fetching follow-up by ID: ${id}`,
     );
@@ -133,6 +151,8 @@ export class FollowUpService {
 
     const followUp = await this.mongo.models.followUp
       .findById(id)
+      .populate('businessId', '_id name')
+      .populate('assignedTo', '_id fullName')
       .lean()
       .exec();
 
@@ -161,17 +181,14 @@ export class FollowUpService {
       `Follow-up fetched successfully. Follow-up ID: ${id}, Notes: ${notes.length}`,
     );
 
-    return {
-      ...followUp,
-      notes,
-    } as FollowUp & { notes: any[] };
+    return {...this.mapFollowUpResponse(followUp), notes,};
   }
 
   // GET ALL FOLLOW-UPS
   async findAll(
     query: FollowUpFilterDto,
   ): Promise<{
-    data: FollowUp[];
+    data: FollowUpResponse[];
     total: number;
   }> {
     const {
@@ -229,6 +246,8 @@ export class FollowUpService {
       await Promise.all([
         this.mongo.models.followUp
           .find(filter)
+          .populate('businessId', '_id name')
+          .populate('assignedTo', '_id fullName')
           .sort({ scheduledAt: 1 })
           .skip(skip)
           .limit(limit)
@@ -244,7 +263,7 @@ export class FollowUpService {
     );
 
     return {
-      data: followUps as FollowUp[],
+      data: followUps.map((followup) => this.mapFollowUpResponse(followup)),
       total,
     };
   }
@@ -252,7 +271,7 @@ export class FollowUpService {
   // GET BUSINESS FOLLOW-UP HISTORY
   async findByBusiness(
     businessId: string,
-  ): Promise<FollowUp[]> {
+  ): Promise<FollowUpResponse[]> {
     this.logger.log(
       `Fetching follow-up history. Business ID: ${businessId}`,
     );
@@ -272,6 +291,8 @@ export class FollowUpService {
         .find({
           businessId,
         })
+        .populate('businessId', '_id name')
+        .populate('assignedTo', '_id fullName')
         .sort({
           scheduledAt: -1,
         })
@@ -281,14 +302,13 @@ export class FollowUpService {
     this.logger.log(
       `Business follow-up history fetched successfully. Business ID: ${businessId}, Count: ${followUps.length}`,
     );
-
-    return followUps as FollowUp[];
+    return followUps.map((followup) => this.mapFollowUpResponse(followup));
   }
 
   // GET USER FOLLOW-UPS
   async findByAssignedUser(
     userId: string,
-  ): Promise<FollowUp[]> {
+  ): Promise<FollowUpResponse[]> {
     this.logger.log(
       `Fetching follow-ups for assigned user. User ID: ${userId}`,
     );
@@ -308,6 +328,8 @@ export class FollowUpService {
         .find({
           assignedTo: userId,
         })
+        .populate('businessId', '_id name')
+        .populate('assignedTo', '_id fullName')
         .sort({
           scheduledAt: 1,
         })
@@ -318,14 +340,14 @@ export class FollowUpService {
       `User follow-ups fetched successfully. User ID: ${userId}, Count: ${followUps.length}`,
     );
 
-    return followUps as FollowUp[];
+    return followUps.map((followup) => this.mapFollowUpResponse(followup));
   }
 
   // UPDATE FOLLOW-UP
   async update(
     id: string,
     dto: UpdateFollowUpDto,
-  ): Promise<FollowUp> {
+  ): Promise<FollowUpResponse> {
     this.logger.log(
       `Updating follow-up. Follow-up ID: ${id}`,
     );
@@ -350,6 +372,8 @@ export class FollowUpService {
             runValidators: true,
           },
         )
+        .populate('businessId', '_id name')
+        .populate('assignedTo', '_id fullName')
         .lean()
         .exec();
 
@@ -367,7 +391,7 @@ export class FollowUpService {
       `Follow-up updated successfully. Follow-up ID: ${id}`,
     );
 
-    return followUp as FollowUp;
+    return this.mapFollowUpResponse(followUp);
   }
 
   async getKpis(): Promise<FollowUpKpiResponse> {
@@ -485,4 +509,14 @@ export class FollowUpService {
       }
     );
   }
+
+  private mapFollowUpResponse(followup: any): FollowUpResponse {
+      const { businessId, assignedTo, ...followUpData } = followup;
+  
+      return {
+        ...followUpData,
+        business: businessId,
+        assignee: assignedTo,
+      };
+    }
 }

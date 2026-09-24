@@ -29,6 +29,7 @@ export class ContactNumberDto {
     example: 'John Doe',
     description: 'Name of the contact person',
   })
+  @IsOptional()
   @IsString()
   name?: string;
 

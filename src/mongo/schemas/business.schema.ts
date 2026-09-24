@@ -10,7 +10,7 @@ const ContactNumberSchema: Schema<ContactNumber> = new Schema<ContactNumber>(
       trim: true,
     },
     name: {
-      type: String
+      type: String,
     },
     isPrimary: {
       type: Boolean,

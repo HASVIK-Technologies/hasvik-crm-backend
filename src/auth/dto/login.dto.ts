@@ -8,7 +8,7 @@ import {
 
 export class LoginDto {
   @ApiProperty({
-    example: 'admin@hasvik.com',
+    example: 'admin@hasviktech.com',
     description: 'User email address',
   })
   @IsEmail()
@@ -16,7 +16,7 @@ export class LoginDto {
   email!: string;
 
   @ApiProperty({
-    example: 'Password@123',
+    example: 'Hasvik@143',
     description: 'User password',
     minLength: 8,
   })

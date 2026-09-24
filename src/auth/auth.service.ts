@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -43,7 +44,7 @@ export class AuthService {
     );
 
     if (!user || user.isDeleted) {
-      throw new UnauthorizedException(
+      throw new BadRequestException(
         'Invalid email or password',
       );
     }
@@ -54,7 +55,7 @@ export class AuthService {
     );
 
     if (!passwordMatched) {
-      throw new UnauthorizedException(
+      throw new BadRequestException(
         'Invalid email or password',
       );
     }
@@ -93,7 +94,7 @@ export class AuthService {
 
     return this.jwtService.signAsync(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: '15m',
+      expiresIn: '120m', // Make it 15m
     });
   }
 
