@@ -15,6 +15,7 @@ import {
   ApiPropertyOptional,
 } from '@nestjs/swagger';
 import { BusinessStatus } from 'src/mongo/enums';
+import { BusinessLocationDto } from './business-location.dto';
 
 
 export class ContactNumberDto {
@@ -154,21 +155,11 @@ export class CreateBusinessDto {
   @IsString()
   pincode?: string;
 
-  @ApiPropertyOptional({
-    example: 25.7589,
-    description: 'Business latitude',
-  })
+  @ApiPropertyOptional({ type: BusinessLocationDto })
   @IsOptional()
-  @IsNumber()
-  latitude?: number;
-
-  @ApiPropertyOptional({
-    example: 84.1496,
-    description: 'Business longitude',
-  })
-  @IsOptional()
-  @IsNumber()
-  longitude?: number;
+  @ValidateNested()
+  @Type(() => BusinessLocationDto)
+  location?: BusinessLocationDto;
 
   @ApiPropertyOptional({
     example: '665c12345678901234567890',

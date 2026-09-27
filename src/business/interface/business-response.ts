@@ -1,6 +1,7 @@
-import { Business, Category } from '../../mongo/interfaces';
+import { Business, Category, User } from '../../mongo/interfaces';
 
 export interface BusinessResponse
-  extends Omit<Business, 'categoryId'> {
+  extends Omit<Business, 'categoryId' | 'assignedTo'> {
   category: Category | null;
+  assignee: User | null;
 }

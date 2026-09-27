@@ -1,5 +1,5 @@
 import { Schema, Types } from 'mongoose';
-import { Business, ContactNumber } from '../interfaces';
+import { Business, BusinessLocation, ContactNumber } from '../interfaces';
 import { BusinessStatus } from '../enums';
 
 const ContactNumberSchema: Schema<ContactNumber> = new Schema<ContactNumber>(
@@ -21,6 +21,19 @@ const ContactNumberSchema: Schema<ContactNumber> = new Schema<ContactNumber>(
     _id: false,
   },
 );
+
+const BusinessLocationSchema: Schema<BusinessLocation> =
+  new Schema<BusinessLocation>(
+    {
+      url: {
+        type: String,
+        trim: true,
+      },
+    },
+    {
+      _id: false,
+    },
+  );
 
 export const BusinessSchema: Schema<Business> = new Schema<Business>(
   {
@@ -90,12 +103,9 @@ export const BusinessSchema: Schema<Business> = new Schema<Business>(
       trim: true,
     },
 
-    latitude: {
-      type: Number,
-    },
-
-    longitude: {
-      type: Number,
+    location: {
+      type: BusinessLocationSchema,
+      default: null,
     },
 
     assignedTo: {

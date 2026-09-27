@@ -1,13 +1,14 @@
 import { Types } from 'mongoose';
 import { BusinessStatus } from '../enums';
 
-
-
-
 export interface ContactNumber {
   number: string;
   name?: string
   isPrimary: boolean;
+}
+
+export interface BusinessLocation {
+  url?: string;
 }
 
 export interface Business {
@@ -37,9 +38,7 @@ export interface Business {
 
   pincode?: string;
 
-  latitude?: number;
-
-  longitude?: number;
+  location?: BusinessLocation;
 
   assignedTo?: Types.ObjectId;
 

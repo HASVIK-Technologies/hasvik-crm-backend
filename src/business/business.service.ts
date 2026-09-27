@@ -57,7 +57,16 @@ export class BusinessService {
     });
 
     let createdBusiness = await business.save();
-    createdBusiness = await createdBusiness.populate('categoryId', '_id name');
+    await createdBusiness.populate([
+      {
+        path: 'categoryId',
+        select: '_id name',
+      },
+      {
+        path: 'assignedTo',
+        select: '_id fullName',
+      },
+    ]);
     this.logger.log(
       `Business created successfully. Business ID: ${createdBusiness._id}`,
     );
@@ -88,6 +97,7 @@ export class BusinessService {
           isDeleted: false,
         })
         .populate('categoryId', '_id name')
+        .populate('assignedTo', '_id fullName')
         .lean()
         .exec();
 
@@ -146,6 +156,7 @@ export class BusinessService {
           },
         )
         .populate('categoryId', '_id name')
+        .populate('assignedTo', '_id fullName')
         .lean()
         .exec();
 
@@ -444,6 +455,7 @@ export class BusinessService {
         this.mongo.models.business
           .find(filter)
           .populate('categoryId', '_id name')
+          .populate('assignedTo', '_id fullName')
           .sort(sortBy || { createdAt: -1 })
           .skip(skip)
           .limit(limit)
@@ -527,10 +539,11 @@ export class BusinessService {
   }
 
   private mapBusinessResponse(business: any): BusinessResponse {
-    const { categoryId, ...businessData } = business;
+    const { categoryId, assignedTo,...businessData } = business;
 
     return {
       ...businessData,
+      assignee: assignedTo,
       category: categoryId,
     };
   }
