@@ -53,7 +53,6 @@ export class CategoryService {
     const category = new this.mongo.models.category({
       name: dto.name,
       description: dto.description,
-      isActive: true,
       createdBy,
     });
 
@@ -195,7 +194,7 @@ export class CategoryService {
     );
 
     const filter: Record<string, any> = {
-      isActive: false,
+      isActive: true,
     };
 
     if (search) {

@@ -53,7 +53,6 @@ export class UserService {
     const user = new this.mongo.models.user({
       ...data,
       password: hashedPassword,
-      isActive: false,
     });
 
     const createdUser = await user.save();
@@ -118,9 +117,6 @@ export class UserService {
   ): Promise<{
     data: UserResponse[];
     total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
   }> {
     const {
       search,
@@ -192,11 +188,6 @@ export class UserService {
     return {
       data: users as UserResponse[],
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(
-        total / limit,
-      ),
     };
   }
 
@@ -311,10 +302,10 @@ export class UserService {
         .findOneAndUpdate(
           {
             _id: id,
-            isActive: false,
+            isActive: true,
           },
           {
-            isActive: true,
+            isActive: false,
             deletedAt: new Date(),
           },
           {
@@ -353,7 +344,7 @@ export class UserService {
     );
 
     const filter: Record<string, any> = {
-      isActive: false,
+      isActive: true,
     };
 
     if (search) {
@@ -383,7 +374,7 @@ export class UserService {
     return this.mongo.models.user
       .findOne({
         email: email.toLowerCase().trim(),
-        isActive: false,
+        isActive: true,
       })
       .select('+password')
       .exec();

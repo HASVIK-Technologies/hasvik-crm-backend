@@ -51,7 +51,7 @@ export class BusinessFilterDto {
   state?: string;
 
   @ApiPropertyOptional({
-    example: false,
+    example: true,
     description: 'Include deleted businesses',
   })
   @IsOptional()

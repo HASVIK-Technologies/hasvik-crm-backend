@@ -148,26 +148,3 @@ export class AuthController {
     return user;
   }
 }
-
-// POST /auth/login
-//        │
-//        ├── accessToken → response
-//        └── refreshToken → HttpOnly cookie
-//                               │
-//                               ▼
-//                      POST /auth/refresh
-//                               │
-//                               ▼
-//                     RefreshTokenStrategy
-//                               │
-//                               ▼
-//                     AuthService.refresh()
-//                               │
-//                        Token rotation
-//                               │
-//                  ┌────────────┴────────────┐
-//                  ▼                         ▼
-//           New access token          New refresh token
-//                                            │
-//                                            ▼
-//                                   HttpOnly cookie

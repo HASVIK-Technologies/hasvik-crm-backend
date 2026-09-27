@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     const user = await this.userService.findById(payload.userId);
 
-    if (!user || user.isActive) {
+    if (!user || !user.isActive) {
       throw new UnauthorizedException('User is no longer active');
     }
 
@@ -34,33 +34,3 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     };
   }
 }
-
-            //         Request
-            //            │
-            //            ▼
-            //     JwtAuthGuard
-            //            │
-            //            ▼
-            //      JWT Strategy
-            //            │
-            //  Extract Bearer Token
-            //            │
-            //            ▼
-            //      Verify JWT
-            //            │
-            //     ┌──────┴──────┐
-            //     │             │
-            //  Invalid        Valid
-            //     │             │
-            //     ▼             ▼
-            //   401        validate(payload)
-            //                   │
-            //                   ▼
-            //            Find User in DB
-            //                   │
-            //          ┌────────┴────────┐
-            //          │                 │
-            //       Not found          Active
-            //          │                 │
-            //          ▼                 ▼
-            //         401         request.user

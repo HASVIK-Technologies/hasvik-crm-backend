@@ -33,7 +33,7 @@ export const UserSchema = new Schema<User>(
 
     isActive: {
       type: Boolean,
-      default: false,
+      default: true,
       index: true,
     },
 

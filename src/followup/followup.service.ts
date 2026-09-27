@@ -56,7 +56,7 @@ export class FollowUpService {
     // Verify business exists
     const business = await this.mongo.models.business.findOne({
       _id: data.businessId,
-      isActive: false,
+      isActive: true,
     });
 
     if (!business) {
@@ -72,7 +72,7 @@ export class FollowUpService {
     // Verify assigned user exists
     const user = await this.mongo.models.user.findOne({
       _id: data.assignedTo,
-      isActive: false,
+      isActive: true,
     });
 
     if (!user) {

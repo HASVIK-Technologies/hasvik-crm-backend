@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { isObjectIdOrHexString } from 'mongoose';
 
@@ -37,7 +38,6 @@ export class BusinessService {
       await this.mongo.models.business.findOne({
         name: data.name,
         city: data.city,
-        isActive: false,
       });
 
     if (existingBusiness) {
@@ -45,15 +45,17 @@ export class BusinessService {
         `Business already exists. Name: ${data.name}, City: ${data.city}`,
       );
 
-      throw new ConflictException(
-        'Business already exists.',
-      );
+      const errorMessage: string = existingBusiness.isActive ? 
+        `Business already exists with Name: ${data.name}, City: ${data.city}`
+       : 
+        `Business is inactive with Name: ${data.name}, City: ${data.city}`
+      ;
+      throw new ConflictException(errorMessage);
     }
 
     const business = new this.mongo.models.business({
       ...data,
-      createdBy: userId,
-      isActive: false,
+      createdBy: userId
     });
 
     let createdBusiness = await business.save();
@@ -94,7 +96,6 @@ export class BusinessService {
       await this.mongo.models.business
         .findOne({
           _id: id,
-          isActive: false,
         })
         .populate('categoryId', '_id name')
         .populate('assignedTo', '_id fullName')
@@ -139,13 +140,28 @@ export class BusinessService {
       );
     }
 
-    const business =
+    const existingBusiness =
       await this.mongo.models.business
-        .findOneAndUpdate(
-          {
-            _id: id,
-            isActive: false,
-          },
+        .findOne({
+          _id: id,
+        })
+        .lean()
+        .exec();
+
+    if (!existingBusiness) {
+      throw new NotFoundException(
+        'Business not found.',
+      );
+    }
+    else if (!existingBusiness.isActive) {
+      throw new BadRequestException(
+        'Business is inactive. Please activate the business.',
+      );
+    }
+
+    const business =
+      await this.mongo.models.business.findByIdAndUpdate(
+        id,
           {
             ...dto,
             updatedBy: userId,
@@ -160,15 +176,6 @@ export class BusinessService {
         .lean()
         .exec();
 
-    if (!business) {
-      this.logger.warn(
-        `Business not found while updating. Business ID: ${id}`,
-      );
-
-      throw new NotFoundException(
-        'Business not found.',
-      );
-    }
 
     this.logger.log(
       `Business updated successfully. Business ID: ${id}`,
@@ -201,10 +208,10 @@ export class BusinessService {
         .findOneAndUpdate(
           {
             _id: id,
-            isActive: false,
+            isActive: true,
           },
           {
-            isActive: true,
+            isActive: false,
             deletedAt: new Date(),
             updatedBy: userId,
           },
@@ -244,7 +251,7 @@ export class BusinessService {
     );
 
     const filter: Record<string, any> = {
-      isActive: false,
+      isActive: true,
     };
 
     if (search) {
@@ -489,7 +496,7 @@ export class BusinessService {
 
     // By default, don't show deleted businesses
     if (isActive !== undefined) {
-      filter.isActive = isActive.toLowerCase() == 'true';
+      filter.isActive = isActive.toLowerCase() == 'false' ? false : true;
     }
 
     if (search) {
