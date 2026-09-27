@@ -1,6 +1,7 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsMongoId,
@@ -168,4 +169,19 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsString()
   leadSource?: string;
+
+ @ApiPropertyOptional({
+    example: true,
+    description: 'Filter categories by active status',
+    default: true,
+  })
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
