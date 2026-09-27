@@ -140,28 +140,12 @@ export class BusinessService {
       );
     }
 
-    const existingBusiness =
-      await this.mongo.models.business
-        .findOne({
-          _id: id,
-        })
-        .lean()
-        .exec();
-
-    if (!existingBusiness) {
-      throw new NotFoundException(
-        'Business not found.',
-      );
-    }
-    else if (!existingBusiness.isActive) {
-      throw new BadRequestException(
-        'Business is inactive. Please activate the business.',
-      );
-    }
-
     const business =
-      await this.mongo.models.business.findByIdAndUpdate(
-        id,
+      await this.mongo.models.business
+        .findOneAndUpdate(
+          {
+            _id: id,
+          },
           {
             ...dto,
             updatedBy: userId,
@@ -176,6 +160,15 @@ export class BusinessService {
         .lean()
         .exec();
 
+    if (!business) {
+      this.logger.warn(
+        `Business not found while updating. Business ID: ${id}`,
+      );
+
+      throw new NotFoundException(
+        'Business not found.',
+      );
+    }
 
     this.logger.log(
       `Business updated successfully. Business ID: ${id}`,
