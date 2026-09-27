@@ -43,7 +43,7 @@ export class AuthService {
       loginDto.email,
     );
 
-    if (!user || user.isDeleted) {
+    if (!user || user.isActive) {
       throw new BadRequestException(
         'Invalid email or password',
       );
@@ -207,7 +207,7 @@ export class AuthService {
       payload.userId,
     );
 
-    if (!user || user.isDeleted) {
+    if (!user || user.isActive) {
       throw new UnauthorizedException(
         'User is no longer active',
       );

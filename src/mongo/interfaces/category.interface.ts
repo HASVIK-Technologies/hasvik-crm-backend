@@ -7,7 +7,7 @@ export interface Category {
 
   description?: string;
 
-  isDeleted: boolean;
+  isActive: boolean;
 
   createdBy: Types.ObjectId;
 

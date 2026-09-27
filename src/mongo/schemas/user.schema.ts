@@ -31,7 +31,7 @@ export const UserSchema = new Schema<User>(
       index: true,
     },
 
-    isDeleted: {
+    isActive: {
       type: Boolean,
       default: false,
       index: true,

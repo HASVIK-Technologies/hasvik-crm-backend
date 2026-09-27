@@ -48,7 +48,7 @@ export interface Business {
 
   leadSource?: string;
 
-  isDeleted: boolean;
+  isActive: boolean;
 
   createdAt: Date;
 

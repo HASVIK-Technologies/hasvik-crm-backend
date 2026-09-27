@@ -56,7 +56,7 @@ export class FollowUpService {
     // Verify business exists
     const business = await this.mongo.models.business.findOne({
       _id: data.businessId,
-      isDeleted: false,
+      isActive: false,
     });
 
     if (!business) {
@@ -72,7 +72,7 @@ export class FollowUpService {
     // Verify assigned user exists
     const user = await this.mongo.models.user.findOne({
       _id: data.assignedTo,
-      isDeleted: false,
+      isActive: false,
     });
 
     if (!user) {
@@ -508,6 +508,24 @@ export class FollowUpService {
         overdue: 0,
       }
     );
+  }
+
+  /**
+   * Get status suggestions for followup
+   */
+  getStatus(): Record<string, string> {
+
+    this.logger.log(`Fetching followup status`);
+
+    const statusObject: Record<string, string> = Object.entries(FollowUpStatus).reduce(
+      (acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    return statusObject;
   }
 
   async updateStatus(

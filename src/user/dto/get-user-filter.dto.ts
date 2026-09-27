@@ -48,7 +48,7 @@ export class UserFilterDto {
   })
   @IsOptional()
   @IsBoolean()
-  isDeleted?: boolean;
+  isActive?: boolean;
 
   @ApiPropertyOptional({
     example: 1,

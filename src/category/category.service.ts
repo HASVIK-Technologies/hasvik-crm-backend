@@ -53,7 +53,7 @@ export class CategoryService {
     const category = new this.mongo.models.category({
       name: dto.name,
       description: dto.description,
-      isDeleted: true,
+      isActive: true,
       createdBy,
     });
 
@@ -77,7 +77,7 @@ export class CategoryService {
   }> {
     const {
       search,
-      isDeleted,
+      isActive,
       page = 1,
       limit = 10,
       sortBy = 'name',
@@ -107,8 +107,8 @@ export class CategoryService {
       ];
     }
 
-    if (isDeleted !== undefined) {
-      filter.isDeleted = isDeleted;
+    if (isActive !== undefined) {
+      filter.isActive = isActive;
     }
 
     const skip = (page - 1) * limit;
@@ -162,7 +162,7 @@ export class CategoryService {
       await this.mongo.models.category
         .findOne({
           _id: id,
-          isDeleted: true,
+          isActive: true,
         })
         .lean()
         .exec();
@@ -195,7 +195,7 @@ export class CategoryService {
     );
 
     const filter: Record<string, any> = {
-      isDeleted: false,
+      isActive: false,
     };
 
     if (search) {
@@ -279,7 +279,7 @@ export class CategoryService {
         .findOneAndUpdate(
           {
             _id: id,
-            isDeleted: true,
+            isActive: true,
           },
           updateData,
           {
@@ -312,11 +312,11 @@ export class CategoryService {
    */
   async updateStatus(
     id: string,
-    isDeleted: boolean,
+    isActive: boolean,
     userId: string,
   ): Promise<Category> {
     this.logger.log(
-      `Updating category status. Category ID: ${id}, Active: ${isDeleted}, User ID: ${userId}`,
+      `Updating category status. Category ID: ${id}, Active: ${isActive}, User ID: ${userId}`,
     );
 
     if (!Types.ObjectId.isValid(id)) {
@@ -336,7 +336,7 @@ export class CategoryService {
         .findOneAndUpdate(
           { _id: id },
           {
-            isDeleted,
+            isActive,
             updatedBy,
           },
           {
@@ -358,7 +358,7 @@ export class CategoryService {
     }
 
     this.logger.log(
-      `Category status updated successfully. Category ID: ${id}, Active: ${isDeleted}`,
+      `Category status updated successfully. Category ID: ${id}, Active: ${isActive}`,
     );
 
     return category as Category;

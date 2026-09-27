@@ -37,7 +37,7 @@ export class BusinessService {
       await this.mongo.models.business.findOne({
         name: data.name,
         city: data.city,
-        isDeleted: false,
+        isActive: false,
       });
 
     if (existingBusiness) {
@@ -53,7 +53,7 @@ export class BusinessService {
     const business = new this.mongo.models.business({
       ...data,
       createdBy: userId,
-      isDeleted: false,
+      isActive: false,
     });
 
     let createdBusiness = await business.save();
@@ -94,7 +94,7 @@ export class BusinessService {
       await this.mongo.models.business
         .findOne({
           _id: id,
-          isDeleted: false,
+          isActive: false,
         })
         .populate('categoryId', '_id name')
         .populate('assignedTo', '_id fullName')
@@ -144,7 +144,7 @@ export class BusinessService {
         .findOneAndUpdate(
           {
             _id: id,
-            isDeleted: false,
+            isActive: false,
           },
           {
             ...dto,
@@ -201,10 +201,10 @@ export class BusinessService {
         .findOneAndUpdate(
           {
             _id: id,
-            isDeleted: false,
+            isActive: false,
           },
           {
-            isDeleted: true,
+            isActive: true,
             deletedAt: new Date(),
             updatedBy: userId,
           },
@@ -244,7 +244,7 @@ export class BusinessService {
     );
 
     const filter: Record<string, any> = {
-      isDeleted: false,
+      isActive: false,
     };
 
     if (search) {
@@ -482,14 +482,14 @@ export class BusinessService {
       status,
       categoryId,
       city,
-      isDeleted,
+      isActive,
     } = query;
 
     const filter: Record<string, any> = {};
 
     // By default, don't show deleted businesses
-    if (isDeleted !== undefined) {
-      filter.isDeleted = isDeleted.toLowerCase() == 'true';
+    if (isActive !== undefined) {
+      filter.isActive = isActive.toLowerCase() == 'true';
     }
 
     if (search) {

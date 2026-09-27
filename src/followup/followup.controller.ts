@@ -139,6 +139,20 @@ export class FollowUpController {
     return await this.followUpService.getKpis(query);
   }
 
+  @Get('statuses')
+  @Permissions(Permission.FOLLOW_UP_READ)
+  @ApiOperation({
+    summary: 'Get follow-up statuses',
+    description: 'Returns the available statuses for follow-ups.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Follow-ups retrieved successfully.',
+  })
+  async getStatus() {
+    return this.followUpService.getStatus();
+  }
+
   /**
    * Get Follow-up by ID
    */

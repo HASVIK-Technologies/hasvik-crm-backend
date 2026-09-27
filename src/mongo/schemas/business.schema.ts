@@ -130,7 +130,7 @@ export const BusinessSchema: Schema<Business> = new Schema<Business>(
       index: true,
     },
 
-    isDeleted: {
+    isActive: {
       type: Boolean,
       default: false,
       index: true,

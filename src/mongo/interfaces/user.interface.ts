@@ -10,7 +10,7 @@ export interface User {
 
   role: UserRole;
 
-  isDeleted: boolean;
+  isActive: boolean;
   deletedAt?: Date;
 
   createdAt: Date;

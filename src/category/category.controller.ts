@@ -188,7 +188,7 @@ export class CategoryController {
     const userId = req.user.userId;
     return await this.categoryService.updateStatus(
       id,
-      dto.isDeleted,
+      dto.isActive,
       userId,
     );
   }

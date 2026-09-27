@@ -53,7 +53,7 @@ export class UserService {
     const user = new this.mongo.models.user({
       ...data,
       password: hashedPassword,
-      isDeleted: false,
+      isActive: false,
     });
 
     const createdUser = await user.save();
@@ -125,7 +125,7 @@ export class UserService {
     const {
       search,
       role,
-      isDeleted,
+      isActive,
       page = 1,
       limit = 10,
       sortBy = 'fullName',
@@ -159,8 +159,8 @@ export class UserService {
       filter.role = role;
     }
 
-    if (isDeleted !== undefined) {
-      filter.isDeleted = isDeleted;
+    if (isActive !== undefined) {
+      filter.isActive = isActive;
     }
 
     const skip = (page - 1) * limit;
@@ -311,10 +311,10 @@ export class UserService {
         .findOneAndUpdate(
           {
             _id: id,
-            isDeleted: false,
+            isActive: false,
           },
           {
-            isDeleted: true,
+            isActive: true,
             deletedAt: new Date(),
           },
           {
@@ -353,7 +353,7 @@ export class UserService {
     );
 
     const filter: Record<string, any> = {
-      isDeleted: false,
+      isActive: false,
     };
 
     if (search) {
@@ -383,7 +383,7 @@ export class UserService {
     return this.mongo.models.user
       .findOne({
         email: email.toLowerCase().trim(),
-        isDeleted: false,
+        isActive: false,
       })
       .select('+password')
       .exec();

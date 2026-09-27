@@ -56,7 +56,7 @@ export class BusinessFilterDto {
   })
   @IsOptional()
   @IsString()
-  isDeleted?: string;
+  isActive?: string;
 
   @ApiPropertyOptional({
     example: '1',
