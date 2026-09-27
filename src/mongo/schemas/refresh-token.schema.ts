@@ -17,6 +17,7 @@ export const RefreshTokenSchema = new Schema<RefreshTokenDocument>(
       type: Schema.Types.ObjectId,
       required: true,
       index: true,
+      unique: true,
     },
 
     jti: {
@@ -48,13 +49,4 @@ export const RefreshTokenSchema = new Schema<RefreshTokenDocument>(
     timestamps: true,
     collection: 'refresh_tokens',
   },
-);
-
-RefreshTokenSchema.index(
-  { expiresAt: 1 },
-  { expireAfterSeconds: 0 },
-);
-RefreshTokenSchema.index(
-  { userId: 1 },
-  { unique: true },
 );
