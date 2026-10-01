@@ -298,7 +298,7 @@ export class FollowUpService {
         $gte: moment.utc().toDate(),
       };
     }
-    else{
+    else if (status) {
       filter.status = status;
     }
 
