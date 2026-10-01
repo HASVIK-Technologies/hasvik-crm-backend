@@ -6,7 +6,7 @@ import {
 import { isObjectIdOrHexString, Types } from 'mongoose';
 
 import { MongoService } from '../mongo/mongo.service';
-import { FollowUp } from '../mongo/interfaces';
+import { FollowUp, Note } from '../mongo/interfaces';
 
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
@@ -28,7 +28,7 @@ export class FollowUpService {
   async create(
     data: CreateFollowUpDto,
     userId: string,
-  ): Promise<FollowUpResponse> {
+  ): Promise<FollowUpResponse & { notes: Note | null }> {
     this.logger.log(
       `Creating follow-up. Business ID: ${data.businessId}, Assigned To: ${data.assignedTo}, User ID: ${userId}`,
     );
@@ -85,9 +85,11 @@ export class FollowUpService {
       );
     }
 
+    // Remove note before creating the followup document
+    const { notes: notes, ...followUpData } = data;
     // Create follow-up
     const followUp = new this.mongo.models.followUp({
-      ...data,
+      ...followUpData,
       createdBy: userId,
     });
   
@@ -107,21 +109,32 @@ export class FollowUpService {
       `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}`,
     );
 
-    if(data.notes) {
+
+    let noteResponse:Note | null = null;
+    if(notes) {
       // Create note for the follow-up
       const note = new this.mongo.models.note({ 
         entityId: savedFollowUp._id,
         entityType: NoteEntityType.FOLLOW_UP,
-        content: data.notes,
+        content: notes,
         createdBy: userId,
       });
-      await note.save();
+      const savedNote = await note.save();
+      noteResponse = savedNote.toObject() as Note;
+
       this.logger.log(
         `Note created for follow-up. Note ID: ${note._id}, Follow-up ID: ${savedFollowUp._id}`,
       );
     }
 
-    return this.mapFollowUpResponse(savedFollowUp.toObject());
+    const followUpResponse = this.mapFollowUpResponse(
+      savedFollowUp.toObject(),
+    );
+
+    return {
+      ...followUpResponse,
+      notes: noteResponse,
+    };
   }
 
   // GET FOLLOW-UP BY ID

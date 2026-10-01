@@ -44,6 +44,14 @@ export class UpdateBusinessDto {
   name?: string;
 
   @ApiPropertyOptional({
+    example: 'ABC Furniture is a leading furniture retailer in the region.',
+    description: 'Business description',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
     example: '665c12345678901234567890',
     description: 'Business category ID',
   })

@@ -92,7 +92,6 @@ export class BusinessService {
       );
     }
 
-    //return this.mapBusinessResponse(createdBusiness.toObject());
     const businessResponse = this.mapBusinessResponse(
       createdBusiness.toObject(),
     );
