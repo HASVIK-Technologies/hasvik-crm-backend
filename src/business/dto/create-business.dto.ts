@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { BusinessStatus } from 'src/mongo/enums';
 import { BusinessLocationDto } from './business-location.dto';
+import { CreateBusinessFollowUpDto } from './create-business-follow-up.dto';
 
 
 export class ContactNumberDto {
@@ -176,4 +177,13 @@ export class CreateBusinessDto {
   @IsOptional()
   @IsString()
   leadSource?: string;
+  
+  @ApiPropertyOptional({
+    type: CreateBusinessFollowUpDto,
+    description: 'Optional initial follow-up for the business',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateBusinessFollowUpDto)
+  followUp?: CreateBusinessFollowUpDto;
 }

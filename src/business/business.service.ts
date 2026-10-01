@@ -15,7 +15,9 @@ import { UpdateBusinessDto } from './dto/update-business.dto';
 import { BusinessFilterDto, BusinessKPIsDto } from './dto/get-business-filter.dto';
 import {BusinessResponse} from './interface/business-response';
 import {BusinessKpiResponse} from './interface/kpis-response'
-import { BusinessStatus } from 'src/mongo/enums';
+import { BusinessStatus } from '../mongo/enums';
+import { FollowUpService } from '../followup/followup.service';
+import { FollowUpResponse } from 'src/followup/interface/followup-response';
 
 @Injectable()
 export class BusinessService {
@@ -23,13 +25,14 @@ export class BusinessService {
 
   constructor(
     private readonly mongo: MongoService,
+    private readonly followUpService: FollowUpService,
   ) {}
 
   // CREATE BUSINESS
   async create(
     data: CreateBusinessDto,
     userId: string,
-  ): Promise<BusinessResponse> {
+  ): Promise<BusinessResponse & { followUp: FollowUpResponse | null }> {
     this.logger.log(
       `Creating business. Name: ${data.name}, User ID: ${userId}`,
     );
@@ -53,12 +56,16 @@ export class BusinessService {
       throw new ConflictException(errorMessage);
     }
 
+    // Remove followUp before creating the Business document
+    const { followUp: followUpData, ...businessData } = data;
+  
     const business = new this.mongo.models.business({
-      ...data,
+      ...businessData,
       createdBy: userId
     });
 
     let createdBusiness = await business.save();
+
     await createdBusiness.populate([
       {
         path: 'categoryId',
@@ -69,11 +76,31 @@ export class BusinessService {
         select: '_id fullName',
       },
     ]);
+    
     this.logger.log(
       `Business created successfully. Business ID: ${createdBusiness._id}`,
     );
 
-    return this.mapBusinessResponse(createdBusiness.toObject());
+    let followUp:FollowUpResponse | null = null;
+    if (followUpData) {
+      followUp = await this.followUpService.create(
+        {
+          ...followUpData,
+          businessId: createdBusiness._id.toString(),
+        },
+        userId,
+      );
+    }
+
+    //return this.mapBusinessResponse(createdBusiness.toObject());
+    const businessResponse = this.mapBusinessResponse(
+      createdBusiness.toObject(),
+    );
+
+    return {
+      ...businessResponse,
+      followUp,
+    };
   }
 
   // FIND BUSINESS BY ID

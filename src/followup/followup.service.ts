@@ -130,7 +130,7 @@ export class FollowUpService {
   ): Promise<FollowUpResponse & { notes: any[] }> {
     this.logger.log(
       `Fetching follow-up by ID: ${id}`,
-    );
+    )
 
     if (!isObjectIdOrHexString(id)) {
       this.logger.warn(
