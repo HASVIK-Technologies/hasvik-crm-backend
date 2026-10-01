@@ -292,7 +292,13 @@ export class FollowUpService {
       filter.scheduledAt = {
         $lt: moment.utc().toDate(),
       };
-    } else if (status) {
+    } else if (status === FollowUpStatus.SCHEDULED) {
+      filter.status = status;
+      filter.scheduledAt = {
+        $gte: moment.utc().toDate(),
+      };
+    }
+    else{
       filter.status = status;
     }
 
