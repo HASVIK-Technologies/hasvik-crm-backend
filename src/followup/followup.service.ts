@@ -55,7 +55,7 @@ export class FollowUpService {
 
     // Verify business exists
     const business = await this.mongo.models.business.findOne({
-      _id: data.businessId,
+      _id: this.mongo.toObjectId(data.businessId),
       isActive: true,
     });
 
@@ -71,7 +71,7 @@ export class FollowUpService {
 
     // Verify assigned user exists
     const user = await this.mongo.models.user.findOne({
-      _id: data.assignedTo,
+      _id: this.mongo.toObjectId(data.assignedTo),
       isActive: true,
     });
 
@@ -90,14 +90,14 @@ export class FollowUpService {
     // Create follow-up
     const followUp = new this.mongo.models.followUp({
       ...followUpData,
-      createdBy: userId,
+      createdBy: this.mongo.toObjectId(userId),
     });
   
     let savedFollowUp = await followUp.save();
     await savedFollowUp.populate([
       {
         path: 'businessId',
-        select: '_id name city',
+        select: '_id name city phoneNumbers whatsappNumbers email',
       },
       {
         path: 'assignedTo',
@@ -117,7 +117,7 @@ export class FollowUpService {
         entityId: savedFollowUp._id,
         entityType: NoteEntityType.FOLLOW_UP,
         content: notes,
-        createdBy: userId,
+        createdBy: this.mongo.toObjectId(userId),
       });
       const savedNote = await note.save();
       noteResponse = savedNote.toObject() as Note;
@@ -156,8 +156,8 @@ export class FollowUpService {
     }
 
     const followUp = await this.mongo.models.followUp
-      .findById(id)
-      .populate('businessId', '_id name city')
+      .findById(this.mongo.toObjectId(id))
+      .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
       .populate('assignedTo', '_id fullName')
       .lean()
       .exec();
@@ -208,7 +208,7 @@ export class FollowUpService {
       await Promise.all([
         this.mongo.models.followUp
           .find(filter)
-          .populate('businessId', '_id name city')
+          .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
           .populate('assignedTo', '_id fullName')
           .sort({ scheduledAt: 1 })
           .skip(skip)
@@ -251,9 +251,9 @@ export class FollowUpService {
     const followUps =
       await this.mongo.models.followUp
         .find({
-          businessId,
+          businessId: this.mongo.toObjectId(businessId),
         })
-        .populate('businessId', '_id name city')
+        .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
         .populate('assignedTo', '_id fullName')
         .sort({
           scheduledAt: -1,
@@ -280,11 +280,11 @@ export class FollowUpService {
     const filter: Record<string, any> = {};
 
     if (businessId) {
-      filter.businessId = businessId;
+      filter.businessId = this.mongo.toObjectId(businessId);
     }
 
     if (assignedTo) {
-      filter.assignedTo = assignedTo;
+      filter.assignedTo = this.mongo.toObjectId(assignedTo);
     }
 
     if (status === FollowUpStatus.OVERDUE) {
@@ -346,9 +346,9 @@ export class FollowUpService {
     const followUps =
       await this.mongo.models.followUp
         .find({
-          assignedTo: userId,
+          assignedTo: this.mongo.toObjectId(userId),
         })
-        .populate('businessId', '_id name city')
+        .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
         .populate('assignedTo', '_id fullName')
         .sort({
           scheduledAt: 1,
@@ -393,7 +393,7 @@ export class FollowUpService {
             runValidators: true,
           },
         )
-        .populate('businessId', '_id name city')
+        .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
         .populate('assignedTo', '_id fullName')
         .lean()
         .exec();
@@ -583,7 +583,7 @@ export class FollowUpService {
       await this.mongo.models.followUp
         .findOneAndUpdate(
           {
-            _id: id,
+            _id: this.mongo.toObjectId(id),
             status: FollowUpStatus.SCHEDULED,
           },
           {
@@ -594,7 +594,7 @@ export class FollowUpService {
             runValidators: true,
           },
         )
-        .populate('businessId', '_id name city')
+        .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
         .populate('assignedTo', '_id fullName')
         .lean()
         .exec();

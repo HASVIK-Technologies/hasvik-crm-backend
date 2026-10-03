@@ -3,7 +3,6 @@ import {
   ConflictException,
   NotFoundException,
   Logger,
-  BadRequestException,
 } from '@nestjs/common';
 import { isObjectIdOrHexString } from 'mongoose';
 
@@ -61,7 +60,7 @@ export class BusinessService {
   
     const business = new this.mongo.models.business({
       ...businessData,
-      createdBy: userId
+      createdBy: this.mongo.toObjectId(userId)
     });
 
     let createdBusiness = await business.save();
@@ -121,7 +120,7 @@ export class BusinessService {
     const business =
       await this.mongo.models.business
         .findOne({
-          _id: id,
+          _id: this.mongo.toObjectId(id),
         })
         .populate('categoryId', '_id name')
         .populate('assignedTo', '_id fullName')
@@ -170,7 +169,7 @@ export class BusinessService {
       await this.mongo.models.business
         .findOneAndUpdate(
           {
-            _id: id,
+            _id: this.mongo.toObjectId(id),
           },
           {
             ...dto,
@@ -226,13 +225,13 @@ export class BusinessService {
       await this.mongo.models.business
         .findOneAndUpdate(
           {
-            _id: id,
+            _id: this.mongo.toObjectId(id),
             isActive: true,
           },
           {
             isActive: false,
             deletedAt: new Date(),
-            updatedBy: userId,
+            updatedBy: this.mongo.toObjectId(userId),
           },
           {
             new: true,
@@ -397,6 +396,16 @@ export class BusinessService {
           },
         },
 
+        inactive: {
+          $sum: {
+            $cond: [
+              { $eq: ['$isActive', false] },
+              1,
+              0,
+            ],
+          },
+        },
+
         interested: {
           $sum: {
             $cond: [
@@ -425,6 +434,7 @@ export class BusinessService {
         total: 1,
         active: 1,
         new: 1,
+        inactive: 1,
         interested: 1,
         won: 1,
       },
@@ -445,6 +455,7 @@ export class BusinessService {
         total: 0,
         active: 0,
         new: 0,
+        inactive: 0,
         interested: 0,
         won: 0
       })
@@ -552,7 +563,7 @@ export class BusinessService {
     }
 
     if (categoryId) {
-      filter.categoryId = categoryId;
+      filter.categoryId = this.mongo.toObjectId(categoryId);
     }
 
     if (city) {
@@ -566,7 +577,6 @@ export class BusinessService {
 
   private mapBusinessResponse(business: any): BusinessResponse {
     const { categoryId, assignedTo,...businessData } = business;
-
     return {
       ...businessData,
       assignee: assignedTo,

@@ -90,4 +90,8 @@ export class MongoService {
             databaseName: mongoose.connection.name,
         };
     }
+
+    toObjectId(id: string) {
+        return new mongoose.Types.ObjectId(id);
+    }
 }
