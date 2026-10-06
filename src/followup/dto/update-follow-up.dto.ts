@@ -53,12 +53,4 @@ export class UpdateFollowUpDto {
   @IsInt()
   @Min(0)
   reminderInMinutes?: number;
-
-  @ApiPropertyOptional({
-    example: 'Discuss pricing and product requirements',
-    description: 'Notes related to the follow-up',
-  })
-  @IsOptional()
-  @IsString()
-  notes?: string;
 }

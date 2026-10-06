@@ -28,9 +28,9 @@ export class FollowUpService {
   async create(
     data: CreateFollowUpDto,
     userId: string,
-  ): Promise<FollowUpResponse & { notes: Note | null }> {
+  ): Promise<FollowUpResponse> {
     this.logger.log(
-      `Creating follow-up. Business ID: ${data.businessId}, Assigned To: ${data.assignedTo}, User ID: ${userId}`,
+      `Creating follow-up. Businesgs ID: ${data.businessId}, Assigned To: ${data.assignedTo}, User ID: ${userId}`,
     );
 
     if (!isObjectIdOrHexString(data.businessId)) {
@@ -110,7 +110,7 @@ export class FollowUpService {
     );
 
 
-    let noteResponse:Note | null = null;
+    let noteResponse: Note[] = [];
     if(notes) {
       // Create note for the follow-up
       const note = new this.mongo.models.note({ 
@@ -120,7 +120,7 @@ export class FollowUpService {
         createdBy: this.mongo.toObjectId(userId),
       });
       const savedNote = await note.save();
-      noteResponse = savedNote.toObject() as Note;
+      noteResponse = [savedNote.toObject() as Note];
 
       this.logger.log(
         `Note created for follow-up. Note ID: ${note._id}, Follow-up ID: ${savedFollowUp._id}`,
@@ -129,18 +129,16 @@ export class FollowUpService {
 
     const followUpResponse = this.mapFollowUpResponse(
       savedFollowUp.toObject(),
+      noteResponse
     );
 
-    return {
-      ...followUpResponse,
-      notes: noteResponse,
-    };
+    return followUpResponse;
   }
 
   // GET FOLLOW-UP BY ID
   async findById(
     id: string,
-  ): Promise<FollowUpResponse & { notes: any[] }> {
+  ): Promise<FollowUpResponse> {
     this.logger.log(
       `Fetching follow-up by ID: ${id}`,
     )
@@ -172,16 +170,7 @@ export class FollowUpService {
       );
     }
 
-    const notes = await this.mongo.models.note
-      .find({
-        entityType: NoteEntityType.FOLLOW_UP,
-        entityId: followUp._id,
-      })
-      .sort({
-        createdAt: -1,
-      })
-      .lean()
-      .exec();
+    const notes = await this.getFollowUpNotes(followUp._id);
 
     this.logger.log(
       `Follow-up fetched successfully. Follow-up ID: ${id}, Notes: ${notes.length}`,
@@ -190,6 +179,46 @@ export class FollowUpService {
     return {...this.mapFollowUpResponse(followUp), notes,};
   }
 
+  // // GET ALL FOLLOW-UPS
+  // async findAll(
+  //   query: FollowUpFilterDto,
+  // ): Promise<{
+  //   data: FollowUpResponse[];
+  //   total: number;
+  // }> {
+
+  //   const filter: Record<string, any> = this.filterforGetFollowUps(query);
+
+  //   const page = Number(query.page) || 1;
+  //   const limit = Number(query.limit) || 10;
+  //   const skip = (page - 1) * limit;
+
+  //   const [followUps, total] =
+  //     await Promise.all([
+  //       this.mongo.models.followUp
+  //         .find(filter)
+  //         .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
+  //         .populate('assignedTo', '_id fullName')
+  //         .sort({ scheduledAt: 1 })
+  //         .skip(skip)
+  //         .limit(limit)
+  //         .lean()
+  //         .exec(),
+
+  //       this.mongo.models.followUp
+  //         .countDocuments(filter),
+  //     ]);
+
+  //   this.logger.log(
+  //     `Follow-ups fetched successfully. Count: ${followUps.length}, Total: ${total}`,
+  //   );
+
+  //   return {
+  //     data: followUps.map((followup) => this.mapFollowUpResponse(followup)),
+  //     total,
+  //   };
+  // }
+
   // GET ALL FOLLOW-UPS
   async findAll(
     query: FollowUpFilterDto,
@@ -197,38 +226,198 @@ export class FollowUpService {
     data: FollowUpResponse[];
     total: number;
   }> {
-
-    const filter: Record<string, any> = this.filterforGetFollowUps(query);
+    const filter: Record<string, any> =
+      this.filterforGetFollowUps(query);
 
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const [followUps, total] =
-      await Promise.all([
-        this.mongo.models.followUp
-          .find(filter)
-          .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
-          .populate('assignedTo', '_id fullName')
-          .sort({ scheduledAt: 1 })
-          .skip(skip)
-          .limit(limit)
-          .lean()
-          .exec(),
+    const [followUps, total] = await Promise.all([
+      this.mongo.models.followUp.aggregate([
+        {
+          $match: filter,
+        },
 
-        this.mongo.models.followUp
-          .countDocuments(filter),
-      ]);
+        // Business
+        {
+          $lookup: {
+            from: 'businesses',
+            let: { businessId: '$businessId' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$_id', '$$businessId'],
+                  },
+                },
+              },
+              {
+                $unwind: {
+                  path: '$businessId',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  city: 1,
+                  phoneNumbers: 1,
+                  whatsappNumbers: 1,
+                  email: 1,
+                },
+              },
+            ],
+            as: 'businessId',
+          },
+        },
+
+        // 3. Populate assigned user
+        {
+          $lookup: {
+            from: 'users',
+            let: { userId: '$assignedTo' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$_id', '$$userId'],
+                  },
+                },
+              },
+              {
+                $unwind: {
+                  path: '$assignedTo',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  fullName: 1,
+                },
+              },
+            ],
+            as: 'assignedTo',
+          },
+        },
+
+        // Notes
+        {
+          $lookup: {
+            from: 'notes',
+            let: {
+              followUpId: '$_id',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      {
+                        $eq: ['$entityId', '$$followUpId'],
+                      },
+                      {
+                        $eq: [
+                          '$entityType',
+                          NoteEntityType.FOLLOW_UP,
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+              {
+                $sort: {
+                  createdAt: -1,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  content: 1,
+                  entityType: 1,
+                  entityId: 1,
+                  createdBy: 1,
+                  updatedBy: 1,
+                  createdAt: 1,
+                  updatedAt: 1,
+                },
+              },
+            ],
+            as: 'notes',
+          },
+        },
+
+        // Sort
+        {
+          $sort: {
+            scheduledAt: 1,
+          },
+        },
+
+        // Pagination
+        {
+          $skip: skip,
+        },
+        {
+          $limit: limit,
+        },
+      ]),
+
+      this.mongo.models.followUp.countDocuments(filter),
+    ]);
 
     this.logger.log(
       `Follow-ups fetched successfully. Count: ${followUps.length}, Total: ${total}`,
     );
 
     return {
-      data: followUps.map((followup) => this.mapFollowUpResponse(followup)),
+      data: followUps.map((followup) =>
+        this.mapFollowUpResponse(followup, followup.notes),
+      ),
       total,
     };
   }
+
+  // GET BUSINESS FOLLOW-UP HISTORY
+  // async findByBusiness(
+  //   businessId: string,
+  // ): Promise<FollowUpResponse[]> {
+  //   this.logger.log(
+  //     `Fetching follow-up history. Business ID: ${businessId}`,
+  //   );
+
+  //   if (!isObjectIdOrHexString(businessId)) {
+  //     this.logger.warn(
+  //       `Invalid business ID: ${businessId}`,
+  //     );
+
+  //     throw new NotFoundException(
+  //       'Invalid business id.',
+  //     );
+  //   }
+
+  //   const followUps =
+  //     await this.mongo.models.followUp
+  //       .find({
+  //         businessId: this.mongo.toObjectId(businessId),
+  //       })
+  //       .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
+  //       .populate('assignedTo', '_id fullName')
+  //       .sort({
+  //         scheduledAt: -1,
+  //       })
+  //       .lean()
+  //       .exec();
+
+        
+  //   this.logger.log(
+  //     `Business follow-up history fetched successfully. Business ID: ${businessId}, Count: ${followUps.length}`,
+  //   );
+  //   return followUps.map((followup) => this.mapFollowUpResponse(followup));
+  // }
 
   // GET BUSINESS FOLLOW-UP HISTORY
   async findByBusiness(
@@ -249,24 +438,135 @@ export class FollowUpService {
     }
 
     const followUps =
-      await this.mongo.models.followUp
-        .find({
-          businessId: this.mongo.toObjectId(businessId),
-        })
-        .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
-        .populate('assignedTo', '_id fullName')
-        .sort({
-          scheduledAt: -1,
-        })
-        .lean()
-        .exec();
+      await this.mongo.models.followUp.aggregate([
+        // 1. Filter by business
+        {
+          $match: {
+            businessId: this.mongo.toObjectId(businessId),
+          },
+        },
+
+        // 2. Populate business
+        {
+          $lookup: {
+            from: 'businesses',
+            let: { businessId: '$businessId' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$_id', '$$businessId'],
+                  },
+                },
+              },
+              {
+                $unwind: {
+                  path: '$businessId',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  city: 1,
+                  phoneNumbers: 1,
+                  whatsappNumbers: 1,
+                  email: 1,
+                },
+              },
+            ],
+            as: 'businessId',
+          },
+        },
+
+        // 3. Populate assigned user
+        {
+          $lookup: {
+            from: 'users',
+            let: { userId: '$assignedTo' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$_id', '$$userId'],
+                  },
+                },
+              },
+              {
+                $unwind: {
+                  path: '$assignedTo',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  fullName: 1,
+                },
+              },
+            ],
+            as: 'assignedTo',
+          },
+        },
+
+        // 4. Get all notes for the follow-up
+        {
+          $lookup: {
+            from: 'notes',
+            let: {
+              followUpId: '$_id',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      {
+                        $eq: [
+                          '$entityId',
+                          '$$followUpId',
+                        ],
+                      },
+                      {
+                        $eq: [
+                          '$entityType',
+                          NoteEntityType.FOLLOW_UP,
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+
+              // Latest note first
+              {
+                $sort: {
+                  createdAt: -1,
+                },
+              },
+            ],
+            as: 'notes',
+          },
+        },
+
+        // 5. Sort follow-ups
+        {
+          $sort: {
+            scheduledAt: -1,
+          },
+        },
+      ]).exec();
 
     this.logger.log(
       `Business follow-up history fetched successfully. Business ID: ${businessId}, Count: ${followUps.length}`,
     );
-    return followUps.map((followup) => this.mapFollowUpResponse(followup));
-  }
 
+    return followUps.map((followup) =>
+      this.mapFollowUpResponse(followup, followup.notes),
+    );
+  }
+  
   filterforGetFollowUps(query: FollowUpFilterDto): Record<string, any> {
     const {
       businessId,
@@ -326,6 +626,43 @@ export class FollowUpService {
   
 
   // GET USER FOLLOW-UPS
+  // async findByAssignedUser(
+  //   userId: string,
+  // ): Promise<FollowUpResponse[]> {
+  //   this.logger.log(
+  //     `Fetching follow-ups for assigned user. User ID: ${userId}`,
+  //   );
+
+  //   if (!isObjectIdOrHexString(userId)) {
+  //     this.logger.warn(
+  //       `Invalid user ID: ${userId}`,
+  //     );
+
+  //     throw new NotFoundException(
+  //       'Invalid user id.',
+  //     );
+  //   }
+
+  //   const followUps =
+  //     await this.mongo.models.followUp
+  //       .find({
+  //         assignedTo: this.mongo.toObjectId(userId),
+  //       })
+  //       .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
+  //       .populate('assignedTo', '_id fullName')
+  //       .sort({
+  //         scheduledAt: 1,
+  //       })
+  //       .lean()
+  //       .exec();
+
+  //   this.logger.log(
+  //     `User follow-ups fetched successfully. User ID: ${userId}, Count: ${followUps.length}`,
+  //   );
+
+  //   return followUps.map((followup) => this.mapFollowUpResponse(followup));
+  // }
+  // GET USER FOLLOW-UPS
   async findByAssignedUser(
     userId: string,
   ): Promise<FollowUpResponse[]> {
@@ -344,23 +681,131 @@ export class FollowUpService {
     }
 
     const followUps =
-      await this.mongo.models.followUp
-        .find({
-          assignedTo: this.mongo.toObjectId(userId),
-        })
-        .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
-        .populate('assignedTo', '_id fullName')
-        .sort({
-          scheduledAt: 1,
-        })
-        .lean()
-        .exec();
+      await this.mongo.models.followUp.aggregate([
+        // 1. Filter by assigned user
+        {
+          $match: {
+            assignedTo: this.mongo.toObjectId(userId),
+          },
+        },
+
+        // 2. Populate business
+        {
+          $lookup: {
+            from: 'businesses',
+            let: { businessId: '$businessId' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$_id', '$$businessId'],
+                  },
+                },
+              },
+              {
+                $unwind: {
+                  path: '$businessId',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  city: 1,
+                  phoneNumbers: 1,
+                  whatsappNumbers: 1,
+                  email: 1,
+                },
+              },
+            ],
+            as: 'businessId',
+          },
+        },
+        
+        // 3. Populate assigned user
+        {
+          $lookup: {
+            from: 'users',
+            let: { userId: '$assignedTo' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$_id', '$$userId'],
+                  },
+                },
+              },
+              {
+                $unwind: {
+                  path: '$assignedTo',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  fullName: 1,
+                },
+              },
+            ],
+            as: 'assignedTo',
+          },
+        },
+
+        // 4. Get all notes for each follow-up
+        {
+          $lookup: {
+            from: 'notes',
+            let: {
+              followUpId: '$_id',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      {
+                        $eq: [
+                          '$entityId',
+                          '$$followUpId',
+                        ],
+                      },
+                      {
+                        $eq: [
+                          '$entityType',
+                          NoteEntityType.FOLLOW_UP,
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+              {
+                $sort: {
+                  createdAt: -1,
+                },
+              },
+            ],
+            as: 'notes',
+          },
+        },
+
+        // 5. Sort follow-ups
+        {
+          $sort: {
+            scheduledAt: 1,
+          },
+        },
+      ]).exec();
 
     this.logger.log(
       `User follow-ups fetched successfully. User ID: ${userId}, Count: ${followUps.length}`,
     );
 
-    return followUps.map((followup) => this.mapFollowUpResponse(followup));
+    return followUps.map((followup) =>
+      this.mapFollowUpResponse(followup, followup.notes),
+    );
   }
 
   // UPDATE FOLLOW-UP
@@ -612,13 +1057,14 @@ export class FollowUpService {
     return this.mapFollowUpResponse(followUp);
   }
 
-  private mapFollowUpResponse(followup: FollowUp): FollowUpResponse {
+  private mapFollowUpResponse(followup: FollowUp, notes: Note[] = []): FollowUpResponse {
     const { businessId, assignedTo, ...followUpData } = followup;
 
     return {
       ...followUpData,
       business: businessId,
       assignee: assignedTo,
+      notes: notes ?? [],
       status: this.getRuntimeStatus(followup.status, followup.scheduledAt,), 
     } as unknown as FollowUpResponse;
   }
@@ -635,5 +1081,16 @@ export class FollowUpService {
     }
 
     return status;
+  }
+
+  private async getFollowUpNotes( followUpId: Types.ObjectId): Promise<Note[]> {
+    return this.mongo.models.note
+      .find({
+        entityType: NoteEntityType.FOLLOW_UP,
+        entityId: followUpId,
+      })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
   }
 }
