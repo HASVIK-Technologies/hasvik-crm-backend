@@ -1029,7 +1029,6 @@ export class FollowUpService {
         .findOneAndUpdate(
           {
             _id: this.mongo.toObjectId(id),
-            status: FollowUpStatus.SCHEDULED,
           },
           {
             $set: update,
