@@ -179,46 +179,6 @@ export class FollowUpService {
     return {...this.mapFollowUpResponse(followUp), notes,};
   }
 
-  // // GET ALL FOLLOW-UPS
-  // async findAll(
-  //   query: FollowUpFilterDto,
-  // ): Promise<{
-  //   data: FollowUpResponse[];
-  //   total: number;
-  // }> {
-
-  //   const filter: Record<string, any> = this.filterforGetFollowUps(query);
-
-  //   const page = Number(query.page) || 1;
-  //   const limit = Number(query.limit) || 10;
-  //   const skip = (page - 1) * limit;
-
-  //   const [followUps, total] =
-  //     await Promise.all([
-  //       this.mongo.models.followUp
-  //         .find(filter)
-  //         .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
-  //         .populate('assignedTo', '_id fullName')
-  //         .sort({ scheduledAt: 1 })
-  //         .skip(skip)
-  //         .limit(limit)
-  //         .lean()
-  //         .exec(),
-
-  //       this.mongo.models.followUp
-  //         .countDocuments(filter),
-  //     ]);
-
-  //   this.logger.log(
-  //     `Follow-ups fetched successfully. Count: ${followUps.length}, Total: ${total}`,
-  //   );
-
-  //   return {
-  //     data: followUps.map((followup) => this.mapFollowUpResponse(followup)),
-  //     total,
-  //   };
-  // }
-
   // GET ALL FOLLOW-UPS
   async findAll(
     query: FollowUpFilterDto,
@@ -239,25 +199,14 @@ export class FollowUpService {
           $match: filter,
         },
 
-        // Business
+        // 2. Populate business
         {
           $lookup: {
             from: 'businesses',
-            let: { businessId: '$businessId' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$_id', '$$businessId'],
-                  },
-                },
-              },
-              {
-                $unwind: {
-                  path: '$businessId',
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
+            localField: 'businessId',
+            foreignField: '_id',
+            as: 'businessId',
+            pipeline:[
               {
                 $project: {
                   _id: 1,
@@ -268,8 +217,13 @@ export class FollowUpService {
                   email: 1,
                 },
               },
-            ],
-            as: 'businessId',
+            ]
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessId',
+            preserveNullAndEmptyArrays: true,
           },
         },
 
@@ -277,29 +231,23 @@ export class FollowUpService {
         {
           $lookup: {
             from: 'users',
-            let: { userId: '$assignedTo' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$_id', '$$userId'],
-                  },
-                },
-              },
-              {
-                $unwind: {
-                  path: '$assignedTo',
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
+            localField: 'assignedTo',
+            foreignField: '_id',
+            as: 'assignedTo',
+            pipeline:[
               {
                 $project: {
                   _id: 1,
                   fullName: 1,
                 },
               },
-            ],
-            as: 'assignedTo',
+            ]
+          },
+        },
+        {
+          $unwind: {
+            path: '$assignedTo',
+            preserveNullAndEmptyArrays: true,
           },
         },
 
@@ -382,44 +330,6 @@ export class FollowUpService {
   }
 
   // GET BUSINESS FOLLOW-UP HISTORY
-  // async findByBusiness(
-  //   businessId: string,
-  // ): Promise<FollowUpResponse[]> {
-  //   this.logger.log(
-  //     `Fetching follow-up history. Business ID: ${businessId}`,
-  //   );
-
-  //   if (!isObjectIdOrHexString(businessId)) {
-  //     this.logger.warn(
-  //       `Invalid business ID: ${businessId}`,
-  //     );
-
-  //     throw new NotFoundException(
-  //       'Invalid business id.',
-  //     );
-  //   }
-
-  //   const followUps =
-  //     await this.mongo.models.followUp
-  //       .find({
-  //         businessId: this.mongo.toObjectId(businessId),
-  //       })
-  //       .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
-  //       .populate('assignedTo', '_id fullName')
-  //       .sort({
-  //         scheduledAt: -1,
-  //       })
-  //       .lean()
-  //       .exec();
-
-        
-  //   this.logger.log(
-  //     `Business follow-up history fetched successfully. Business ID: ${businessId}, Count: ${followUps.length}`,
-  //   );
-  //   return followUps.map((followup) => this.mapFollowUpResponse(followup));
-  // }
-
-  // GET BUSINESS FOLLOW-UP HISTORY
   async findByBusiness(
     businessId: string,
   ): Promise<FollowUpResponse[]> {
@@ -450,21 +360,10 @@ export class FollowUpService {
         {
           $lookup: {
             from: 'businesses',
-            let: { businessId: '$businessId' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$_id', '$$businessId'],
-                  },
-                },
-              },
-              {
-                $unwind: {
-                  path: '$businessId',
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
+            localField: 'businessId',
+            foreignField: '_id',
+            as: 'businessId',
+            pipeline:[
               {
                 $project: {
                   _id: 1,
@@ -475,8 +374,13 @@ export class FollowUpService {
                   email: 1,
                 },
               },
-            ],
-            as: 'businessId',
+            ]
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessId',
+            preserveNullAndEmptyArrays: true,
           },
         },
 
@@ -484,29 +388,23 @@ export class FollowUpService {
         {
           $lookup: {
             from: 'users',
-            let: { userId: '$assignedTo' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$_id', '$$userId'],
-                  },
-                },
-              },
-              {
-                $unwind: {
-                  path: '$assignedTo',
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
+            localField: 'assignedTo',
+            foreignField: '_id',
+            as: 'assignedTo',
+            pipeline:[
               {
                 $project: {
                   _id: 1,
                   fullName: 1,
                 },
               },
-            ],
-            as: 'assignedTo',
+            ]
+          },
+        },
+        {
+          $unwind: {
+            path: '$assignedTo',
+            preserveNullAndEmptyArrays: true,
           },
         },
 
@@ -624,44 +522,6 @@ export class FollowUpService {
     return filter;
   }
   
-
-  // GET USER FOLLOW-UPS
-  // async findByAssignedUser(
-  //   userId: string,
-  // ): Promise<FollowUpResponse[]> {
-  //   this.logger.log(
-  //     `Fetching follow-ups for assigned user. User ID: ${userId}`,
-  //   );
-
-  //   if (!isObjectIdOrHexString(userId)) {
-  //     this.logger.warn(
-  //       `Invalid user ID: ${userId}`,
-  //     );
-
-  //     throw new NotFoundException(
-  //       'Invalid user id.',
-  //     );
-  //   }
-
-  //   const followUps =
-  //     await this.mongo.models.followUp
-  //       .find({
-  //         assignedTo: this.mongo.toObjectId(userId),
-  //       })
-  //       .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
-  //       .populate('assignedTo', '_id fullName')
-  //       .sort({
-  //         scheduledAt: 1,
-  //       })
-  //       .lean()
-  //       .exec();
-
-  //   this.logger.log(
-  //     `User follow-ups fetched successfully. User ID: ${userId}, Count: ${followUps.length}`,
-  //   );
-
-  //   return followUps.map((followup) => this.mapFollowUpResponse(followup));
-  // }
   // GET USER FOLLOW-UPS
   async findByAssignedUser(
     userId: string,
@@ -693,21 +553,10 @@ export class FollowUpService {
         {
           $lookup: {
             from: 'businesses',
-            let: { businessId: '$businessId' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$_id', '$$businessId'],
-                  },
-                },
-              },
-              {
-                $unwind: {
-                  path: '$businessId',
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
+            localField: 'businessId',
+            foreignField: '_id',
+            as: 'businessId',
+            pipeline:[
               {
                 $project: {
                   _id: 1,
@@ -718,38 +567,37 @@ export class FollowUpService {
                   email: 1,
                 },
               },
-            ],
-            as: 'businessId',
+            ]
           },
         },
-        
+        {
+          $unwind: {
+            path: '$businessId',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
         // 3. Populate assigned user
         {
           $lookup: {
             from: 'users',
-            let: { userId: '$assignedTo' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$_id', '$$userId'],
-                  },
-                },
-              },
-              {
-                $unwind: {
-                  path: '$assignedTo',
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
+            localField: 'assignedTo',
+            foreignField: '_id',
+            as: 'assignedTo',
+            pipeline:[
               {
                 $project: {
                   _id: 1,
                   fullName: 1,
                 },
               },
-            ],
-            as: 'assignedTo',
+            ]
+          },
+        },
+        {
+          $unwind: {
+            path: '$assignedTo',
+            preserveNullAndEmptyArrays: true,
           },
         },
 
