@@ -302,30 +302,25 @@ export class BusinessService {
     const filter: Record<string, any> = {};
 
     if (search) {
-      filter.city = {
+      filter.name = {
         $regex: search,
         $options: 'i',
       };
     }
 
-    const response = await this.mongo.models.business.aggregate([
+    const response = await this.mongo.models.city.aggregate([
       { $match: filter},
-      {
-        $group: {   _id: '$city' },
-      },
       {
         $project: {
           _id: 0,
-          city: '$_id',
+          city: '$name',
         },
       },
-      {
-        $sort: { city: 1}
-      },
-      {$limit: 50,},
-    ]);
+      {$limit: 20,},
+    ])
+    .toArray();
 
-    return response as Business[];
+    return response;
   }
 
   /**

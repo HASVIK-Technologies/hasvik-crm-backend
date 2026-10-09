@@ -1,4 +1,4 @@
-import mongoose, { Model, Schema } from 'mongoose';
+import mongoose, { Collection,Document,Model, Schema } from 'mongoose';
 
 import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, UserSchema } from './schemas';
 import type { Business, Category, FollowUp, Note, User } from './interfaces';
@@ -53,11 +53,16 @@ export class MongoModels {
   readonly user!: Model<User>;
   readonly refreshToken!: Model<RefreshToken>
   
+  // Existing MongoDB collection; no Mongoose schema required 
+  readonly city!: Collection<Document>;
+
   constructor() {
     for (const item of SCHEMAS) {
       (this as any)[item.key] =
         mongoose.models[item.name] ??
         mongoose.model(item.name, item.schema);
     }
+
+    this.city = mongoose.connection.collection('cities');
   }
 }

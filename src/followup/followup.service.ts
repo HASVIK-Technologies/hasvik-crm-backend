@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  BadRequestException
 } from '@nestjs/common';
 import { isObjectIdOrHexString, Types } from 'mongoose';
 
@@ -193,129 +194,134 @@ export class FollowUpService {
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const [followUps, total] = await Promise.all([
-      this.mongo.models.followUp.aggregate([
-        {
-          $match: filter,
-        },
+    const pipeline: any[] = [
+      {
+        $match: filter,
+      },
 
-        // 2. Populate business
-        {
-          $lookup: {
-            from: 'businesses',
-            localField: 'businessId',
-            foreignField: '_id',
-            as: 'businessId',
-            pipeline:[
-              {
-                $project: {
-                  _id: 1,
-                  name: 1,
-                  city: 1,
-                  phoneNumbers: 1,
-                  whatsappNumbers: 1,
-                  email: 1,
-                },
+      // 2. Populate business
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessId',
+          foreignField: '_id',
+          as: 'businessId',
+          pipeline:[
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                city: 1,
+                phoneNumbers: 1,
+                whatsappNumbers: 1,
+                email: 1,
               },
-            ]
-          },
-        },
-        {
-          $unwind: {
-            path: '$businessId',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-
-        // 3. Populate assigned user
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'assignedTo',
-            foreignField: '_id',
-            as: 'assignedTo',
-            pipeline:[
-              {
-                $project: {
-                  _id: 1,
-                  fullName: 1,
-                },
-              },
-            ]
-          },
-        },
-        {
-          $unwind: {
-            path: '$assignedTo',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-
-        // Notes
-        {
-          $lookup: {
-            from: 'notes',
-            let: {
-              followUpId: '$_id',
             },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      {
-                        $eq: ['$entityId', '$$followUpId'],
-                      },
-                      {
-                        $eq: [
-                          '$entityType',
-                          NoteEntityType.FOLLOW_UP,
-                        ],
-                      },
-                    ],
-                  },
-                },
-              },
-              {
-                $sort: {
-                  createdAt: -1,
-                },
-              },
-              {
-                $project: {
-                  _id: 1,
-                  content: 1,
-                  entityType: 1,
-                  entityId: 1,
-                  createdBy: 1,
-                  updatedBy: 1,
-                  createdAt: 1,
-                  updatedAt: 1,
-                },
-              },
-            ],
-            as: 'notes',
-          },
+          ]
         },
+      },
+      {
+        $unwind: {
+          path: '$businessId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
-        // Sort
-        {
-          $sort: {
-            scheduledAt: 1,
-          },
+      // 3. Populate assigned user
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedTo',
+          foreignField: '_id',
+          as: 'assignedTo',
+          pipeline:[
+            {
+              $project: {
+                _id: 1,
+                fullName: 1,
+              },
+            },
+          ]
         },
+      },
+      {
+        $unwind: {
+          path: '$assignedTo',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
-        // Pagination
-        {
-          $skip: skip,
+      // Notes
+      {
+        $lookup: {
+          from: 'notes',
+          let: {
+            followUpId: '$_id',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    {
+                      $eq: ['$entityId', '$$followUpId'],
+                    },
+                    {
+                      $eq: [
+                        '$entityType',
+                        NoteEntityType.FOLLOW_UP,
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              $sort: {
+                createdAt: -1,
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                content: 1,
+                entityType: 1,
+                entityId: 1,
+                createdBy: 1,
+                updatedBy: 1,
+                createdAt: 1,
+                updatedAt: 1,
+              },
+            },
+          ],
+          as: 'notes',
         },
-        {
-          $limit: limit,
+      },
+
+      // Sort
+      {
+        $sort: {
+          scheduledAt: 1,
         },
-      ]),
+      },
+
+      // Pagination
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ];
+
+    console.log('Pipeline for fetching follow-ups:', JSON.stringify(pipeline, null, 2));
+
+    const [followUps, total] = await Promise.all([
+      this.mongo.models.followUp.aggregate(pipeline),
 
       this.mongo.models.followUp.countDocuments(filter),
     ]);
+
 
     this.logger.log(
       `Follow-ups fetched successfully. Count: ${followUps.length}, Total: ${total}`,
@@ -465,62 +471,85 @@ export class FollowUpService {
     );
   }
   
-  filterforGetFollowUps(query: FollowUpFilterDto): Record<string, any> {
+
+  filterforGetFollowUps(
+    query: FollowUpFilterDto,
+  ): Record<string, any> {
+
     const {
       businessId,
       assignedTo,
       status,
       type,
       fromDate,
-      toDate
+      toDate,
     } = query;
 
+    const now = moment.utc();
+    const todayStart = now.clone().startOf('day');
+    const tomorrowStart = todayStart.clone().add(1, 'day');
+
+    const conditions: Record<string, any>[] = [];
     const filter: Record<string, any> = {};
 
+    // Business filter
     if (businessId) {
       filter.businessId = this.mongo.toObjectId(businessId);
     }
 
+    // Assigned user filter
     if (assignedTo) {
       filter.assignedTo = this.mongo.toObjectId(assignedTo);
     }
 
-    if (status === FollowUpStatus.OVERDUE) {
-      filter.status = FollowUpStatus.SCHEDULED;
-      filter.scheduledAt = {
-        $lt: moment.utc().toDate(),
-      };
-    } else if (status === FollowUpStatus.SCHEDULED) {
-      filter.status = status;
-      filter.scheduledAt = {
-        $gte: moment.utc().toDate(),
-      };
-    }
-    else if (status) {
-      filter.status = status;
-    }
-
+    // Follow-up type filter
     if (type) {
       filter.type = type;
     }
 
-    // Date range
+    // Explicit status filter
+    if (status) {
+      if (status === FollowUpStatus.OVERDUE) {
+        conditions.push({
+          status: FollowUpStatus.SCHEDULED,
+          scheduledAt: {
+            $lt: now.toDate(),
+          },
+        });
+      } else if (status === FollowUpStatus.SCHEDULED) {
+        conditions.push({
+          status: FollowUpStatus.SCHEDULED,
+          scheduledAt: {
+            $gte: now.toDate(),
+          },
+        });
+      } else if (status) {
+        conditions.push({ status });
+      }
+    }
+
+    // Custom date range
     if (fromDate || toDate) {
-      filter.scheduledAt = {};
+      const scheduledAt: Record<string, Date> = {};
 
       if (fromDate) {
-        filter.scheduledAt.$gte =
-          new Date(fromDate);
+        scheduledAt.$gte = moment.utc(fromDate).toDate();
       }
 
       if (toDate) {
-        filter.scheduledAt.$lte =
-          new Date(toDate);
+        scheduledAt.$lte = moment.utc(toDate).toDate();
       }
+
+      conditions.push({ scheduledAt });
+    }
+
+    if (conditions.length > 0) {
+      filter.$and = conditions;
     }
 
     return filter;
   }
+
   
   // GET USER FOLLOW-UPS
   async findByAssignedUser(

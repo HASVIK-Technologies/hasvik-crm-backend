@@ -46,7 +46,7 @@ export class FollowUpFilterDto {
   @IsOptional()
   @IsEnum(FollowUpType)
   type?: FollowUpType;
-
+    
   @ApiPropertyOptional({
     example: '2026-08-28T00:00:00.000Z',
     description: 'Return follow-ups scheduled from this date',

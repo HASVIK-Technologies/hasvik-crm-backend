@@ -68,27 +68,27 @@ export const FollowUpSchema: Schema<FollowUp> = new Schema<FollowUp>(
 /**
  * Indexes
  */
-
-// Business follow-up history
+// Business follow-up history and business-specific date filtering
 FollowUpSchema.index({
   businessId: 1,
   scheduledAt: -1,
 });
 
-// User's follow-ups
+// Assigned user's follow-ups, including status and date filtering
 FollowUpSchema.index({
   assignedTo: 1,
+  status: 1,
   scheduledAt: 1,
 });
 
-// Pending/upcoming/overdue queries
+// General scheduled, upcoming, and overdue queries
 FollowUpSchema.index({
   status: 1,
   scheduledAt: 1,
 });
 
-// Dashboard queries
+// Optional: add only if you frequently sort or filter by type
 FollowUpSchema.index({
+  type: 1,
   scheduledAt: 1,
-  status: 1,
 });
