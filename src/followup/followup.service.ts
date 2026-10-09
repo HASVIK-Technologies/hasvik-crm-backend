@@ -2,7 +2,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException
 } from '@nestjs/common';
 import { isObjectIdOrHexString, Types } from 'mongoose';
 
@@ -87,7 +86,7 @@ export class FollowUpService {
     }
 
     // Remove note before creating the followup document
-    const { notes: notes, ...followUpData } = data;
+    const { ...followUpData } = data;
     // Create follow-up
     const followUp = new this.mongo.models.followUp({
       ...followUpData,
@@ -110,30 +109,9 @@ export class FollowUpService {
       `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}`,
     );
 
-
-    let noteResponse: Note[] = [];
-    if(notes) {
-      // Create note for the follow-up
-      const note = new this.mongo.models.note({ 
-        entityId: savedFollowUp._id,
-        entityType: NoteEntityType.FOLLOW_UP,
-        content: notes,
-        createdBy: this.mongo.toObjectId(userId),
-      });
-      const savedNote = await note.save();
-      noteResponse = [savedNote.toObject() as Note];
-
-      this.logger.log(
-        `Note created for follow-up. Note ID: ${note._id}, Follow-up ID: ${savedFollowUp._id}`,
-      );
-    }
-
-    const followUpResponse = this.mapFollowUpResponse(
+    return this.mapFollowUpResponse(
       savedFollowUp.toObject(),
-      noteResponse
     );
-
-    return followUpResponse;
   }
 
   // GET FOLLOW-UP BY ID
@@ -171,13 +149,11 @@ export class FollowUpService {
       );
     }
 
-    const notes = await this.getFollowUpNotes(followUp._id);
-
     this.logger.log(
-      `Follow-up fetched successfully. Follow-up ID: ${id}, Notes: ${notes.length}`,
+      `Follow-up fetched successfully. Follow-up ID: ${id}`,
     );
 
-    return {...this.mapFollowUpResponse(followUp), notes,};
+    return {...this.mapFollowUpResponse(followUp)};
   }
 
   // GET ALL FOLLOW-UPS
@@ -251,53 +227,6 @@ export class FollowUpService {
         },
       },
 
-      // Notes
-      {
-        $lookup: {
-          from: 'notes',
-          let: {
-            followUpId: '$_id',
-          },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    {
-                      $eq: ['$entityId', '$$followUpId'],
-                    },
-                    {
-                      $eq: [
-                        '$entityType',
-                        NoteEntityType.FOLLOW_UP,
-                      ],
-                    },
-                  ],
-                },
-              },
-            },
-            {
-              $sort: {
-                createdAt: -1,
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                content: 1,
-                entityType: 1,
-                entityId: 1,
-                createdBy: 1,
-                updatedBy: 1,
-                createdAt: 1,
-                updatedAt: 1,
-              },
-            },
-          ],
-          as: 'notes',
-        },
-      },
-
       // Sort
       {
         $sort: {
@@ -314,8 +243,6 @@ export class FollowUpService {
       },
     ];
 
-    console.log('Pipeline for fetching follow-ups:', JSON.stringify(pipeline, null, 2));
-
     const [followUps, total] = await Promise.all([
       this.mongo.models.followUp.aggregate(pipeline),
 
@@ -329,7 +256,7 @@ export class FollowUpService {
 
     return {
       data: followUps.map((followup) =>
-        this.mapFollowUpResponse(followup, followup.notes),
+        this.mapFollowUpResponse(followup),
       ),
       total,
     };
@@ -414,46 +341,6 @@ export class FollowUpService {
           },
         },
 
-        // 4. Get all notes for the follow-up
-        {
-          $lookup: {
-            from: 'notes',
-            let: {
-              followUpId: '$_id',
-            },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      {
-                        $eq: [
-                          '$entityId',
-                          '$$followUpId',
-                        ],
-                      },
-                      {
-                        $eq: [
-                          '$entityType',
-                          NoteEntityType.FOLLOW_UP,
-                        ],
-                      },
-                    ],
-                  },
-                },
-              },
-
-              // Latest note first
-              {
-                $sort: {
-                  createdAt: -1,
-                },
-              },
-            ],
-            as: 'notes',
-          },
-        },
-
         // 5. Sort follow-ups
         {
           $sort: {
@@ -467,7 +354,7 @@ export class FollowUpService {
     );
 
     return followUps.map((followup) =>
-      this.mapFollowUpResponse(followup, followup.notes),
+      this.mapFollowUpResponse(followup),
     );
   }
   
@@ -630,44 +517,6 @@ export class FollowUpService {
           },
         },
 
-        // 4. Get all notes for each follow-up
-        {
-          $lookup: {
-            from: 'notes',
-            let: {
-              followUpId: '$_id',
-            },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      {
-                        $eq: [
-                          '$entityId',
-                          '$$followUpId',
-                        ],
-                      },
-                      {
-                        $eq: [
-                          '$entityType',
-                          NoteEntityType.FOLLOW_UP,
-                        ],
-                      },
-                    ],
-                  },
-                },
-              },
-              {
-                $sort: {
-                  createdAt: -1,
-                },
-              },
-            ],
-            as: 'notes',
-          },
-        },
-
         // 5. Sort follow-ups
         {
           $sort: {
@@ -681,7 +530,7 @@ export class FollowUpService {
     );
 
     return followUps.map((followup) =>
-      this.mapFollowUpResponse(followup, followup.notes),
+      this.mapFollowUpResponse(followup),
     );
   }
 
@@ -933,14 +782,13 @@ export class FollowUpService {
     return this.mapFollowUpResponse(followUp);
   }
 
-  private mapFollowUpResponse(followup: FollowUp, notes: Note[] = []): FollowUpResponse {
+  private mapFollowUpResponse(followup: FollowUp): FollowUpResponse {
     const { businessId, assignedTo, ...followUpData } = followup;
 
     return {
       ...followUpData,
       business: businessId,
       assignee: assignedTo,
-      notes: notes ?? [],
       status: this.getRuntimeStatus(followup.status, followup.scheduledAt,), 
     } as unknown as FollowUpResponse;
   }
@@ -957,16 +805,5 @@ export class FollowUpService {
     }
 
     return status;
-  }
-
-  private async getFollowUpNotes( followUpId: Types.ObjectId): Promise<Note[]> {
-    return this.mongo.models.note
-      .find({
-        entityType: NoteEntityType.FOLLOW_UP,
-        entityId: followUpId,
-      })
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
   }
 }

@@ -4,5 +4,4 @@ export interface FollowUpResponse
   extends Omit<FollowUp, 'businessId' | 'assignedTo'> {
   business: Business | null;
   assignee: User | null;
-  notes: Note[] | [];
 }
