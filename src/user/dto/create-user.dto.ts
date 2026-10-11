@@ -24,7 +24,7 @@ export class CreateUserDto {
   email!: string;
 
   @ApiProperty({
-    example: 'hasvik Kashyap',
+    example: 'hasvik',
     description: 'User full name',
   })
   @Transform(({ value }) =>

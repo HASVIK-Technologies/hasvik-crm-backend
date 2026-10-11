@@ -24,11 +24,12 @@ export class NoteService {
    * Create a new note
    */
   async create(
+    tenantId: string,
     dto: CreateNoteDto,
     userId: string,
   ): Promise<Note> {
     this.logger.log(
-      `Creating note. Entity Type: ${dto.entityType}, Entity ID: ${dto.entityId}, User ID: ${userId}`,
+      `Creating note. Entity Type: ${dto.entityType}, Entity ID: ${dto.entityId}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!Types.ObjectId.isValid(dto.entityId)) {
@@ -53,11 +54,13 @@ export class NoteService {
 
     // Validate that the referenced entity exists
     await this.validateEntity(
+      tenantId,
       dto.entityType,
       dto.entityId,
     );
 
     const createdNote = new this.mongo.models.note({
+      tenantId: this.mongo.toObjectId(tenantId),
       entityType: dto.entityType,
       entityId: new Types.ObjectId(dto.entityId),
       content: dto.content,
@@ -77,11 +80,12 @@ export class NoteService {
    * Validate referenced entity
    */
   private async validateEntity(
+    tenantId: string,
     entityType: NoteEntityType,
     entityId: string,
   ): Promise<void> {
     this.logger.log(
-      `Validating note entity. Entity Type: ${entityType}, Entity ID: ${entityId}`,
+      `Validating note entity. Entity Type: ${entityType}, Entity ID: ${entityId}, Tenant ID: ${tenantId}`,
     );
 
     const objectId = new Types.ObjectId(entityId);
@@ -92,12 +96,14 @@ export class NoteService {
       case NoteEntityType.BUSINESS:
         entity = await this.mongo.models.business.exists({
           _id: objectId,
+          tenantId: this.mongo.toObjectId(tenantId),
         });
         break;
 
       case NoteEntityType.FOLLOW_UP:
         entity = await this.mongo.models.followUp.exists({
           _id: objectId,
+          tenantId: this.mongo.toObjectId(tenantId),
         });
         break;
 
@@ -113,7 +119,7 @@ export class NoteService {
 
     if (!entity) {
       this.logger.warn(
-        `Referenced entity not found. Entity Type: ${entityType}, Entity ID: ${entityId}`,
+        `Referenced entity not found. Entity Type: ${entityType}, Entity ID: ${entityId}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -122,21 +128,21 @@ export class NoteService {
     }
 
     this.logger.log(
-      `Note entity validated successfully. Entity Type: ${entityType}, Entity ID: ${entityId}`,
+      `Note entity validated successfully. Entity Type: ${entityType}, Entity ID: ${entityId}, Tenant ID: ${tenantId}`,
     );
   }
 
   /**
    * Get note by ID
    */
-  async findById(id: string): Promise<Note> {
+  async findById(tenantId: string, id: string): Promise<Note> {
     this.logger.log(
-      `Fetching note by ID: ${id}`,
+      `Fetching note by ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     if (!Types.ObjectId.isValid(id)) {
       this.logger.warn(
-        `Invalid note ID: ${id}`,
+        `Invalid note ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -145,7 +151,7 @@ export class NoteService {
     }
 
     const note = await this.mongo.models.note
-      .findById(id)
+      .findOne({ _id: id, tenantId: this.mongo.toObjectId(tenantId) })
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email')
       .lean()
@@ -153,7 +159,7 @@ export class NoteService {
 
     if (!note) {
       this.logger.warn(
-        `Note not found. Note ID: ${id}`,
+        `Note not found. Note ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -162,7 +168,7 @@ export class NoteService {
     }
 
     this.logger.log(
-      `Note fetched successfully. Note ID: ${id}`,
+      `Note fetched successfully. Note ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     return note;
@@ -172,15 +178,18 @@ export class NoteService {
    * Get notes by entity
    */
   async findAll(
+    tenantId: string,
     query: NoteFilterDto,
   ): Promise<Note[]> {
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+      tenantId: this.mongo.toObjectId(tenantId),
+    };
 
     const entityType = query.entityType;
     const entityId = query.entityId;
 
     this.logger.log(
-      `Fetching notes. Entity Type: ${entityType || 'all'}, Entity ID: ${entityId || 'all'}`,
+      `Fetching notes. Entity Type: ${entityType || 'all'}, Entity ID: ${entityId || 'all'}, Tenant ID: ${tenantId}`,
     );
 
     if (entityType) {
@@ -190,7 +199,7 @@ export class NoteService {
     if (entityId) {
       if (!Types.ObjectId.isValid(entityId)) {
         this.logger.warn(
-          `Invalid entity ID while fetching notes: ${entityId}`,
+          `Invalid entity ID while fetching notes: ${entityId}, Tenant ID: ${tenantId}`,
         );
 
         throw new NotFoundException(
@@ -222,17 +231,18 @@ export class NoteService {
    * Update note
    */
   async update(
+    tenantId: string,
     id: string,
     dto: UpdateNoteDto,
     userId: string,
   ): Promise<Note> {
     this.logger.log(
-      `Updating note. Note ID: ${id}, User ID: ${userId}`,
+      `Updating note. Note ID: ${id}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!Types.ObjectId.isValid(id)) {
       this.logger.warn(
-        `Invalid note ID while updating: ${id}`,
+        `Invalid note ID while updating: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -242,7 +252,7 @@ export class NoteService {
 
     if (!Types.ObjectId.isValid(userId)) {
       this.logger.warn(
-        `Invalid user ID while updating note: ${userId}`,
+        `Invalid user ID while updating note: ${userId}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -251,8 +261,8 @@ export class NoteService {
     }
 
     const note = await this.mongo.models.note
-      .findByIdAndUpdate(
-        id,
+      .findOneAndUpdate(
+        { _id: id, tenantId: this.mongo.toObjectId(tenantId) },
         {
           content: dto.content,
           updatedBy: new Types.ObjectId(userId),
@@ -278,7 +288,7 @@ export class NoteService {
     }
 
     this.logger.log(
-      `Note updated successfully. Note ID: ${id}`,
+      `Note updated successfully. Note ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     return note;
@@ -288,15 +298,16 @@ export class NoteService {
    * Delete note
    */
   async delete(
+    tenantId: string,
     id: string,
   ): Promise<{ message: string }> {
     this.logger.log(
-      `Deleting note. Note ID: ${id}`,
+      `Deleting note. Note ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     if (!Types.ObjectId.isValid(id)) {
       this.logger.warn(
-        `Invalid note ID while deleting: ${id}`,
+        `Invalid note ID while deleting: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -305,12 +316,15 @@ export class NoteService {
     }
 
     const note = await this.mongo.models.note
-      .findByIdAndDelete(id)
+      .findOneAndDelete({
+        _id: id,
+        tenantId: this.mongo.toObjectId(tenantId),
+      })
       .exec();
 
     if (!note) {
       this.logger.warn(
-        `Note not found while deleting. Note ID: ${id}`,
+        `Note not found while deleting. Note ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -319,7 +333,7 @@ export class NoteService {
     }
 
     this.logger.log(
-      `Note deleted successfully. Note ID: ${id}`,
+      `Note deleted successfully. Note ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     return {

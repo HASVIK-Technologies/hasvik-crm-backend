@@ -3,6 +3,12 @@ import { Category } from '../interfaces';
 
 export const CategorySchema: Schema<Category> = new Schema<Category>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+    
     name: {
       type: String,
       required: true,

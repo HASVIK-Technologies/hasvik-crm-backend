@@ -29,28 +29,30 @@ export class BusinessService {
 
   // CREATE BUSINESS
   async create(
+    tenantId: string,
     data: CreateBusinessDto,
     userId: string,
   ): Promise<BusinessResponse & { followUp: FollowUpResponse | null }> {
     this.logger.log(
-      `Creating business. Name: ${data.name}, User ID: ${userId}`,
+      `Creating business. Name: ${data.name}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     const existingBusiness =
       await this.mongo.models.business.findOne({
+        tenantId: this.mongo.toObjectId(tenantId),
         name: data.name,
         city: data.city,
       });
 
     if (existingBusiness) {
       this.logger.warn(
-        `Business already exists. Name: ${data.name}, City: ${data.city}`,
+        `Business already exists. TenantId: ${tenantId}, Name: ${data.name}, City: ${data.city}`,
       );
 
       const errorMessage: string = existingBusiness.isActive ? 
-        `Business already exists with Name: ${data.name}, City: ${data.city}`
+        `Business already exists with Name: ${data.name}, City: ${data.city}, Tenant ID: ${tenantId}`
        : 
-        `Business is inactive with Name: ${data.name}, City: ${data.city}`
+        `Business is inactive with Name: ${data.name}, City: ${data.city}, Tenant ID: ${tenantId}`
       ;
       throw new ConflictException(errorMessage);
     }
@@ -59,6 +61,7 @@ export class BusinessService {
     const { followUp: followUpData, ...businessData } = data;
   
     const business = new this.mongo.models.business({
+      tenantId: this.mongo.toObjectId(tenantId),
       ...businessData,
       createdBy: this.mongo.toObjectId(userId)
     });
@@ -83,6 +86,7 @@ export class BusinessService {
     let followUp:FollowUpResponse | null = null;
     if (followUpData) {
       followUp = await this.followUpService.create(
+        tenantId,
         {
           ...followUpData,
           businessId: createdBusiness._id.toString(),
@@ -102,9 +106,9 @@ export class BusinessService {
   }
 
   // FIND BUSINESS BY ID
-  async findById(id: string): Promise<BusinessResponse> {
+  async findById(tenantId: string, id: string): Promise<BusinessResponse> {
     this.logger.log(
-      `Fetching business by ID: ${id}`,
+      `Fetching business by ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     if (!isObjectIdOrHexString(id)) {
@@ -121,6 +125,7 @@ export class BusinessService {
       await this.mongo.models.business
         .findOne({
           _id: this.mongo.toObjectId(id),
+          tenantId: this.mongo.toObjectId(tenantId),
         })
         .populate('categoryId', '_id name')
         .populate('assignedTo', '_id fullName')
@@ -147,12 +152,13 @@ export class BusinessService {
 
   // UPDATE BUSINESS
   async update(
+    tenantId: string,
     id: string,
     dto: UpdateBusinessDto,
     userId: string,
   ): Promise<BusinessResponse> {
     this.logger.log(
-      `Updating business. Business ID: ${id}, User ID: ${userId}`,
+      `Updating business. Business ID: ${id}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!isObjectIdOrHexString(id)) {
@@ -170,6 +176,7 @@ export class BusinessService {
         .findOneAndUpdate(
           {
             _id: this.mongo.toObjectId(id),
+            tenantId: this.mongo.toObjectId(tenantId),
           },
           {
             ...dto,
@@ -187,7 +194,7 @@ export class BusinessService {
 
     if (!business) {
       this.logger.warn(
-        `Business not found while updating. Business ID: ${id}`,
+        `Business not found while updating. Business ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -196,7 +203,7 @@ export class BusinessService {
     }
 
     this.logger.log(
-      `Business updated successfully. Business ID: ${id}`,
+      `Business updated successfully. Business ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     return this.mapBusinessResponse(business);
@@ -204,11 +211,12 @@ export class BusinessService {
 
   // DELETE BUSINESS
   async delete(
+    tenantId: string,
     id: string,
     userId: string,
   ): Promise<{ message: string }> {
     this.logger.log(
-      `Soft deleting business. Business ID: ${id}, User ID: ${userId}`,
+      `Soft deleting business. Business ID: ${id}, User ID: ${userId}, TenantId: ${tenantId}`,
     );
 
     if (!isObjectIdOrHexString(id)) {
@@ -226,6 +234,7 @@ export class BusinessService {
         .findOneAndUpdate(
           {
             _id: this.mongo.toObjectId(id),
+            tenantId: this.mongo.toObjectId(tenantId),
             isActive: true,
           },
           {
@@ -241,7 +250,7 @@ export class BusinessService {
 
     if (!business) {
       this.logger.warn(
-        `Business not found or already deleted. Business ID: ${id}`,
+        `Business not found or already deleted. Business ID: ${id}, Tenant Id: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -262,6 +271,7 @@ export class BusinessService {
    * Get autocomplete suggestions for businesses
    */
   async autocomplete(
+    tenantId: string,
     search?: string,
   ): Promise<Business[]> {
     this.logger.log(
@@ -270,6 +280,7 @@ export class BusinessService {
 
     const filter: Record<string, any> = {
       isActive: true,
+      tenantId: this.mongo.toObjectId(tenantId)
     };
 
     if (search) {
@@ -295,11 +306,13 @@ export class BusinessService {
     return business as Business[];
   }
 
-  async getCityAutocomplete(search?: string){
+  async getCityAutocomplete(tenantId: string, search?: string ){
     this.logger.log(
       `Fetching city autocomplete. Search: ${search || 'none'}`,
     );
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+      tenantId: this.mongo.toObjectId(tenantId)
+    };
 
     if (search) {
       filter.name = {
@@ -344,11 +357,11 @@ export class BusinessService {
   /**
    * Get KPI suggestions for businesses
    */
-  async getKpis(query: BusinessKPIsDto): Promise<BusinessKpiResponse> {
+  async getKpis(tenantId: string, query: BusinessKPIsDto): Promise<BusinessKpiResponse> {
   
     this.logger.log(`Fetching business KPIs`);
 
-    const filter: Record<string, any> = this.filterforGetBusinesses(query);
+    const filter: Record<string, any> = this.filterforGetBusinesses(tenantId,query);
     const matchStage = {
       $match: filter
     };
@@ -459,6 +472,7 @@ export class BusinessService {
 
   // GET ALL BUSINESSES
   async findAll(
+    tenantId: string,
     query: BusinessFilterDto,
   ): Promise<{
     data: BusinessResponse[];
@@ -478,7 +492,7 @@ export class BusinessService {
         ? Number(query.limit)
         : 10;
 
-    const filter: Record<string, any> = this.filterforGetBusinesses(query);
+    const filter: Record<string, any> = this.filterforGetBusinesses(tenantId, query);
 
     const skip = (page - 1) * limit;
 
@@ -508,7 +522,7 @@ export class BusinessService {
     };
   }
 
-  filterforGetBusinesses(query: BusinessFilterDto){
+  filterforGetBusinesses(tenantId: string, query: BusinessFilterDto){
     const {
       search,
       status,
@@ -517,7 +531,9 @@ export class BusinessService {
       isActive,
     } = query;
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+      tenantId: this.mongo.toObjectId(tenantId)
+    };
 
     // By default, don't show deleted businesses
     if (isActive !== undefined) {

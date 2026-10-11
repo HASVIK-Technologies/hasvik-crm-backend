@@ -4,6 +4,8 @@ import { NoteEntityType } from '../enums';
 export interface Note {
   _id: Types.ObjectId;
 
+  tenantId: Types.ObjectId;
+  
   entityType: NoteEntityType;
   entityId: Types.ObjectId;
 

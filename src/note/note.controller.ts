@@ -51,7 +51,8 @@ export class NoteController {
   @Permissions(Permission.NOTE_CREATE)
   async create(@Body() dto: CreateNoteDto, @Req() req: any) {
     const userId = req.user.userId;
-    return await this.noteService.create(dto, userId);
+    const tenantId = req.user.tenantId;
+    return await this.noteService.create(tenantId, dto, userId);
   }
 
   @Get()
@@ -66,8 +67,10 @@ export class NoteController {
   @Permissions(Permission.NOTE_READ)
   async findAll(
     @Query() query: NoteFilterDto,
+    @Req() req: any
   ) {
-    return await this.noteService.findAll(query);
+    const tenantId = req.user.tenantId;
+    return await this.noteService.findAll(tenantId, query);
   }
 
   @Get(':id')
@@ -89,8 +92,9 @@ export class NoteController {
     description: 'Note not found.',
   })
   @Permissions(Permission.NOTE_READ)
-  async findById(@Param('id') id: string) {
-    return await this.noteService.findById(id);
+  async findById(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.noteService.findById(tenantId, id);
   }
 
   @Patch(':id')
@@ -118,7 +122,8 @@ export class NoteController {
     @Req() req: any
   ) {
     const userId = req.user.userId;
-    return await this.noteService.update(id, dto, userId);
+    const tenantId = req.user.tenantId;
+    return await this.noteService.update(tenantId, id, dto, userId);
   }
 
   @Delete(':id')
@@ -140,7 +145,8 @@ export class NoteController {
     description: 'Note not found.',
   })
   @Permissions(Permission.NOTE_DELETE)
-  async delete(@Param('id') id: string) {
-    return await this.noteService.delete(id);
+  async delete(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.noteService.delete(tenantId, id);
   }
 }

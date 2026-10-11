@@ -27,33 +27,33 @@ export class SubscriptionService {
    * Create a subscription in PENDING status.
    * The plan snapshot is generated on the server.
    */
-  async create(dto: CreateSubscriptionDto) {
-    this.validateObjectId(dto.businessId, 'businessId');
+  async create(tenantId: string, dto: CreateSubscriptionDto) {
+    this.validateObjectId(dto.tenantId, 'tenantId');
     this.validateObjectId(dto.planId, 'planId');
 
     try {
-      const [business, plan] = await Promise.all([
-        this.mongo.models.business
-          .findById(dto.businessId)
+      const [tenant, plan] = await Promise.all([
+        this.mongo.models.tenant
+          .findOne({_id: this.mongo.toObjectId(dto.tenantId), isActive: true, })
           .lean()
           .exec(),
 
         this.mongo.models.subscriptionPlan
           .findOne({
-            _id: dto.planId,
+            _id: this.mongo.toObjectId(dto.planId),
             isActive: true,
           })
           .lean()
           .exec(),
       ]);
 
-      if (!business) {
-        throw new NotFoundException('Business not found');
+      if (!tenant) {
+        throw new NotFoundException('Tenant not found');
       }
 
-      if (business.isActive === false) {
+      if (tenant.isActive === false) {
         throw new BadRequestException(
-          'Cannot assign a subscription to an inactive business',
+          'Cannot assign a subscription to an inactive tenant',
         );
       }
 
@@ -99,8 +99,8 @@ export class SubscriptionService {
       };
 
       const subscription: ISubscription = await this.mongo.models.subscription.create({
-        businessId: new Types.ObjectId(dto.businessId),
-        planId: new Types.ObjectId(dto.planId),
+        tenantId: this.mongo.toObjectId(dto.tenantId),
+        planId: this.mongo.toObjectId(dto.planId),
         planSnapshot,
         status: SubscriptionStatus.PENDING,
         startDate,
@@ -109,11 +109,9 @@ export class SubscriptionService {
         assignedBy: null,
         cancelledAt: null,
         cancellationReason: null,
-        notes: dto.notes?.trim() || null,
       });
 
       this.logger.log( 
-        //@ts-ignore
         `Subscription created: ${subscription._id}`,
       );
 
@@ -135,12 +133,12 @@ export class SubscriptionService {
   /**
    * Retrieve subscriptions.
    */
-  async findAll() {
+  async findAll(tenantId: string) {
     try {
       return await this.mongo.models.subscription
-        .find()
+        .find({tenantId: this.mongo.toObjectId(tenantId)})
         .sort({ createdAt: -1 })
-        .populate('businessId')
+        .populate('tenantId')
         .populate('planId')
         .lean()
         .exec();
@@ -157,12 +155,12 @@ export class SubscriptionService {
   /**
    * Retrieve one subscription.
    */
-  async findOne(id: string) {
+  async findOne(tenantId: string, id: string) {
     this.validateObjectId(id);
 
     const subscription = await this.mongo.models.subscription
-      .findById(id)
-      .populate('businessId')
+      .findOne({_id: id, tenantId: this.mongo.toObjectId(tenantId)})
+      .populate('tenantId')
       .populate('planId')
       .lean()
       .exec();
@@ -177,12 +175,15 @@ export class SubscriptionService {
   /**
    * Activate a pending subscription.
    */
-  async activate(id: string, dto: ActivateSubscriptionDto) {
+  async activate(tenantId: string, id: string, dto: ActivateSubscriptionDto) {
     this.validateObjectId(id);
 
     try {
       const subscription =
-        await this.mongo.models.subscription.findById(id).exec();
+        await this.mongo.models.subscription.findOne({
+          _id: id,
+          tenantId: this.mongo.toObjectId(tenantId),
+        }).exec();
 
       if (!subscription) {
         throw new NotFoundException('Subscription not found');
@@ -208,14 +209,14 @@ export class SubscriptionService {
         );
       }
 
-      const business = await this.mongo.models.business
-        .findById(subscription.businessId)
+      const tenant = await this.mongo.models.tenant
+        .findById(subscription.tenantId)
         .lean()
         .exec();
 
-      if (!business || business.isActive === false) {
+      if (!tenant || tenant.isActive === false) {
         throw new BadRequestException(
-          'The associated business does not exist or is inactive',
+          'The associated tenant does not exist or is inactive',
         );
       }
 
@@ -232,14 +233,14 @@ export class SubscriptionService {
 
       const existingActive =
         await this.mongo.models.subscription.findOne({
-          businessId: subscription.businessId,
+          tenantId: this.mongo.toObjectId(tenantId),
           status: SubscriptionStatus.ACTIVE,
           _id: { $ne: subscription._id },
         }).lean().exec();
 
       if (existingActive) {
         throw new ConflictException(
-          'Business already has an active subscription',
+          'Tenant already has an active subscription',
         );
       }
 
@@ -255,10 +256,6 @@ export class SubscriptionService {
       subscription.endDate = endDate;
       subscription.status = SubscriptionStatus.ACTIVE;
 
-      if (dto.notes?.trim()) {
-        subscription.notes = dto.notes.trim();
-      }
-
       await subscription.save();
 
       this.logger.log(`Subscription activated: ${id}`);
@@ -271,7 +268,7 @@ export class SubscriptionService {
 
       if (this.isDuplicateKeyError(error)) {
         throw new ConflictException(
-          'Business already has an active subscription',
+          'Tenant already has an active subscription',
         );
       }
 
@@ -287,12 +284,15 @@ export class SubscriptionService {
   /**
    * Renew an eligible subscription.
    */
-  async renew(id: string, dto: RenewSubscriptionDto) {
+  async renew(tenantId: string, id: string, dto: RenewSubscriptionDto) {
     this.validateObjectId(id);
 
     try {
       const subscription =
-        await this.mongo.models.subscription.findById(id).exec();
+        await this.mongo.models.subscription.findOne({
+          _id: id,
+          tenantId: this.mongo.toObjectId(tenantId),
+        }).exec();
 
       if (!subscription) {
         throw new NotFoundException('Subscription not found');
@@ -304,27 +304,27 @@ export class SubscriptionService {
         );
       }
 
-      const business = await this.mongo.models.business
-        .findById(subscription.businessId)
+      const tenant = await this.mongo.models.tenant
+        .findById(subscription.tenantId)
         .lean()
         .exec();
 
-      if (!business || business.isActive === false) {
+      if (!tenant || tenant.isActive === false) {
         throw new BadRequestException(
-          'The associated business does not exist or is inactive',
+          'The associated tenant does not exist or is inactive',
         );
       }
 
       const existingActive =
         await this.mongo.models.subscription.findOne({
-          businessId: subscription.businessId,
+          tenantId: subscription.tenantId,
           status: SubscriptionStatus.ACTIVE,
           _id: { $ne: subscription._id },
         }).lean().exec();
 
       if (existingActive) {
         throw new ConflictException(
-          'Business already has another active subscription',
+          'Tenant already has another active subscription',
         );
       }
 
@@ -364,10 +364,6 @@ export class SubscriptionService {
       subscription.cancelledAt = null;
       subscription.cancellationReason = null;
 
-      if (dto.notes?.trim()) {
-        subscription.notes = dto.notes.trim();
-      }
-
       await subscription.save();
 
       this.logger.log(`Subscription renewed: ${id}`);
@@ -380,7 +376,7 @@ export class SubscriptionService {
 
       if (this.isDuplicateKeyError(error)) {
         throw new ConflictException(
-          'Business already has an active subscription',
+          'Tenant already has an active subscription',
         );
       }
 

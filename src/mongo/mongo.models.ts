@@ -4,6 +4,8 @@ import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, Subscriptio
 import type { Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note, User } from './interfaces';
 import { RefreshTokenSchema } from './schemas/refresh-token.schema';
 import { RefreshToken } from './interfaces/refresh-token.interface';
+import { TenantSchema } from './schemas/tenant.schema';
+import { Tenant } from './interfaces/tenant.interface';
 
 type SchemaDefinition = {
   key: string;
@@ -52,6 +54,11 @@ const SCHEMAS: SchemaDefinition[] = [
     name: 'Subscription',
     schema: SubscriptionSchema,
   },
+  {
+    key: 'tenant',
+    name: 'Tenant',
+    schema: TenantSchema,
+  },
 ];
 
 export class MongoModels {
@@ -64,7 +71,7 @@ export class MongoModels {
   readonly refreshToken!: Model<RefreshToken>
   readonly subscriptionPlan!: Model<ISubscriptionPlan>;
   readonly subscription!: Model<ISubscription>;
-
+  readonly tenant!: Model<Tenant>;
   // Existing MongoDB collection; no Mongoose schema required 
   readonly city!: Collection<Document>;
 

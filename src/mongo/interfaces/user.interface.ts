@@ -4,6 +4,7 @@ import { UserRole } from '../enums/user-role.enum';
 export interface User {
   _id: Types.ObjectId;
 
+  tenantId: Types.ObjectId;
   email: string;
   fullName: string;
   password: string;

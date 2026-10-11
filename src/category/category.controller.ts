@@ -48,8 +48,9 @@ export class CategoryController {
     status: 200,
     description: 'Categories retrieved successfully.',
   })
-  async autocomplete(@Query() query: CategoryAutocompleteDto) {
-    return await this.categoryService.autocomplete(query.search);
+  async autocomplete(@Query() query: CategoryAutocompleteDto, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.categoryService.autocomplete(tenantId, query.search);
   }
 
   /**
@@ -70,12 +71,14 @@ export class CategoryController {
     description: 'Category already exists.',
   })
   async create(
-    @Body() dto: CreateCategoryDto, @Req() req: any
+    @Body() dto: CreateCategoryDto, 
+    @Req() req: any
   ) {
     // Replace with authenticated user ID
     const userId = req.user.userId;
+    const tenantId = req.user.tenantId;
 
-    return await this.categoryService.create(dto, userId);
+    return await this.categoryService.create(tenantId, dto, userId);
   }
 
   /**
@@ -87,8 +90,9 @@ export class CategoryController {
     summary: 'Get categories',
     description: 'Returns a paginated list of categories.',
   })
-  async findAll(@Query() query: CategoryFilterDto) {
-    return await this.categoryService.findAll(query);
+  async findAll(@Query() query: CategoryFilterDto, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.categoryService.findAll(tenantId, query);
   }
 
 
@@ -116,8 +120,10 @@ export class CategoryController {
   })
   async findById(
     @Param('id') id: string,
+    @Req() req: any
   ) {
-    return await this.categoryService.findById(id);
+    const tenantId = req.user.tenantId;
+    return await this.categoryService.findById(tenantId, id);
   }
 
   /**
@@ -153,7 +159,8 @@ export class CategoryController {
   ) {
     // Replace with authenticated user ID
     const userId = req.user.userId;
-    return await this.categoryService.update(id, dto, userId);
+    const tenantId = req.user.tenantId;
+    return await this.categoryService.update(tenantId, id, dto, userId);
   }
 
   /**
@@ -186,7 +193,9 @@ export class CategoryController {
   ) {
     // Replace with authenticated user ID
     const userId = req.user.userId;
+    const tenantId = req.user.tenantId;
     return await this.categoryService.updateStatus(
+      tenantId,
       id,
       dto.isActive,
       userId,

@@ -9,6 +9,7 @@ import { Request } from 'express';
 import { UserRole } from '../../mongo/enums';
 
 interface RefreshTokenPayload {
+  tenantId: string;
   userId: string;
   email: string;
   role: UserRole;

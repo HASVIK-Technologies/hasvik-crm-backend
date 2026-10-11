@@ -4,6 +4,12 @@ import { UserRole } from '../enums/user-role.enum';
 
 export const UserSchema = new Schema<User>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+    
     email: {
       type: String,
       required: true,

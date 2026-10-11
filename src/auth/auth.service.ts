@@ -14,6 +14,7 @@ import { RefreshTokenService } from '../refresh-token/refresh-token.service';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 
 interface RefreshTokenPayload {
+  tenantId: string;
   userId: string;
   email: string;
   role: UserRole;
@@ -61,6 +62,7 @@ export class AuthService {
     }
 
     const authenticatedUser: AuthenticatedUser = {
+      tenantId: user.tenantId.toString(),
       userId: user._id.toString(),
       email: user.email,
       role: user.role,
@@ -90,6 +92,7 @@ export class AuthService {
       userId: user.userId,
       email: user.email,
       role: user.role,
+      tenantId: user.tenantId,
     };
 
     return this.jwtService.signAsync(payload, {
@@ -111,6 +114,7 @@ export class AuthService {
       userId: user.userId,
       email: user.email,
       role: user.role,
+      tenantId: user.tenantId,
       jti,
     };
 
@@ -129,6 +133,7 @@ export class AuthService {
     );
 
     await this.refreshTokenService.upsert({
+      tenantId: user.tenantId.toString(),
       userId: user.userId,
           jti,
           tokenHash,
@@ -214,6 +219,7 @@ export class AuthService {
     }
 
     const authenticatedUser: AuthenticatedUser = {
+      tenantId: user.tenantId.toString(),
       userId: user._id.toString(),
       email: user.email,
       role: user.role,

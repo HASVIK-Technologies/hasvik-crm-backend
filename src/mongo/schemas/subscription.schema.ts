@@ -87,9 +87,8 @@ export const SubscriptionPlanSnapshotSchema =
 export const SubscriptionSchema =
   new Schema<ISubscription>(
     {
-      businessId: {
+      tenantId: {
         type: Schema.Types.ObjectId,
-        ref: 'Business',
         required: true,
         index: true,
       },
@@ -137,12 +136,6 @@ export const SubscriptionSchema =
         maxlength: 500,
         default: null,
       },
-      notes: {
-        type: String,
-        trim: true,
-        maxlength: 1000,
-        default: null,
-      },
     },
     {
       timestamps: true,
@@ -154,7 +147,7 @@ export const SubscriptionSchema =
 // Prevent multiple simultaneously active subscriptions per business.
 // The service must expire an old subscription before activating another.
 SubscriptionSchema.index(
-  { businessId: 1 },
+  { tenantId: 1, planId: 1 },
   {
     unique: true,
     partialFilterExpression: {
@@ -164,7 +157,7 @@ SubscriptionSchema.index(
 );
 
 SubscriptionSchema.index({
-  businessId: 1,
+  tenantId: 1,
   createdAt: -1,
 });
 

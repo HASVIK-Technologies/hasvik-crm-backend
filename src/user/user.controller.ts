@@ -7,7 +7,8 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,8 +29,8 @@ import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/enums/permission.enum';
 
 @ApiTags('Users')
-//@ApiBearerAuth()
-//@UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -44,8 +45,9 @@ export class UserController {
     description: 'Users retrieved successfully.',
   })
   //@Permissions(Permission.USER_READ)
-  async autocomplete(@Query() query: UserAutocompleteDto) {
-    return await this.userService.autocomplete(query.search);
+  async autocomplete(@Query() query: UserAutocompleteDto, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.userService.autocomplete(tenantId, query.search);
   }
 
   @Post()
@@ -61,8 +63,12 @@ export class UserController {
     description: 'User with the email or phone number already exists.',
   })
   //@Permissions(Permission.USER_CREATE)
-  async create(@Body() dto: CreateUserDto) {
-    return await this.userService.create(dto);
+  async create(
+    @Body() dto: CreateUserDto,
+    @Req() req: any
+  ) {
+    const tenantId = req.user.tenantId;
+    return await this.userService.create(tenantId, dto);
   }
 
   @Get()
@@ -74,8 +80,9 @@ export class UserController {
     description: 'Users retrieved successfully.',
   })
   //@Permissions(Permission.USER_READ)
-  async findAll(@Query() query: UserFilterDto) {
-    return await this.userService.findAll(query);
+  async findAll(@Query() query: UserFilterDto, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.userService.findAll(tenantId, query);
   }
 
   @Get(':id')
@@ -91,8 +98,9 @@ export class UserController {
     status: 404,
     description: 'User not found.',
   })
-  //@Permissions(Permission.USER_READ)
-  async findById(@Param('id') id: string) {
+  //@Permmission.USER_READ)
+  async findById(@Param('id') id: string, @Req() req: any) {
+    //const tenantId = req.user.tenantId;
     return await this.userService.findById(id);
   }
 
@@ -112,8 +120,10 @@ export class UserController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
+    @Req() req: any
   ) {
-    return await this.userService.update(id, dto);
+    const tenantId = req.user.tenantId;
+    return await this.userService.update(tenantId, id, dto);
   }
 
   @Delete(':id')
@@ -129,7 +139,8 @@ export class UserController {
     description: 'User not found.',
   })
   //@Permissions(Permission.USER_DELETE)
-  async delete(@Param('id') id: string) {
-    return await this.userService.deleteUser(id);
+  async delete(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.userService.deleteUser(tenantId, id);
   }
 }

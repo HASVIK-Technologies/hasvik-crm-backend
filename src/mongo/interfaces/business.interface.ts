@@ -14,6 +14,8 @@ export interface BusinessLocation {
 export interface Business {
   _id: Types.ObjectId;
 
+  tenantId: Types.ObjectId;
+
   name: string;
 
   description?: string;

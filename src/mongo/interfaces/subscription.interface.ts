@@ -19,7 +19,8 @@ export interface ISubscriptionPlanSnapshot {
 
 
 export interface ISubscription {
-  businessId: Types.ObjectId;
+  _id?: Types.ObjectId;
+  tenantId: Types.ObjectId;
   planId: Types.ObjectId;
   planSnapshot: ISubscriptionPlanSnapshot;
   status: SubscriptionStatus;
@@ -29,7 +30,6 @@ export interface ISubscription {
   assignedBy: Types.ObjectId | null;
   cancelledAt: Date | null;
   cancellationReason?: string | null;
-  notes?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }

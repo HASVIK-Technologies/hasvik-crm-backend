@@ -23,16 +23,18 @@ export class CategoryService {
    * Create a new category
    */
   async create(
+    tenantId: string,
     dto: CreateCategoryDto,
     userId: string,
   ): Promise<Category> {
     this.logger.log(
-      `Creating category. Name: ${dto.name}, User ID: ${userId}`,
+      `Creating category. Name: ${dto.name}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     const existingCategory =
       await this.mongo.models.category
         .findOne({
+          tenantId: this.mongo.toObjectId(tenantId),
           name: dto.name,
         })
         .lean()
@@ -51,6 +53,7 @@ export class CategoryService {
     const createdBy = new Types.ObjectId(userId);
 
     const category = new this.mongo.models.category({
+      tenantId: this.mongo.toObjectId(tenantId),
       name: dto.name,
       description: dto.description,
       createdBy,
@@ -69,6 +72,7 @@ export class CategoryService {
    * Get all categories
    */
   async findAll(
+    tenantId: string,
     query: CategoryFilterDto,
   ): Promise<{
     data: Category[];
@@ -87,7 +91,9 @@ export class CategoryService {
       `Fetching categories. Page: ${page}, Limit: ${limit}, Search: ${search || 'none'}`,
     );
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+      tenantId: this.mongo.toObjectId(tenantId)
+    };
 
     if (search) {
       filter.$or = [
@@ -142,9 +148,9 @@ export class CategoryService {
   /**
    * Get category by ID
    */
-  async findById(id: string): Promise<Category> {
+  async findById(tenantId: string, id: string): Promise<Category> {
     this.logger.log(
-      `Fetching category by ID: ${id}`,
+      `Fetching category by ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     if (!Types.ObjectId.isValid(id)) {
@@ -160,15 +166,16 @@ export class CategoryService {
     const category =
       await this.mongo.models.category
         .findOne({
-          _id: id,
+          _id: this.mongo.toObjectId(id),
           isActive: true,
+          tenantId: this.mongo.toObjectId(tenantId),
         })
         .lean()
         .exec();
 
     if (!category) {
       this.logger.warn(
-        `Category not found. Category ID: ${id}`,
+        `Category not found. Category ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -177,7 +184,7 @@ export class CategoryService {
     }
 
     this.logger.log(
-      `Category fetched successfully. Category ID: ${id}`,
+      `Category fetched successfully. Category ID: ${id}, Tenant ID: ${tenantId}]`,
     );
 
     return category as Category;
@@ -187,6 +194,7 @@ export class CategoryService {
    * Get autocomplete suggestions for categories
    */
   async autocomplete(
+    tenantId: string,
     search?: string,
   ): Promise<Category[]> {
     this.logger.log(
@@ -195,6 +203,7 @@ export class CategoryService {
 
     const filter: Record<string, any> = {
       isActive: true,
+      tenantId: this.mongo.toObjectId(tenantId),
     };
 
     if (search) {
@@ -224,17 +233,18 @@ export class CategoryService {
    * Update category
    */
   async update(
+    tenantId: string,
     id: string,
     dto: UpdateCategoryDto,
     userId: string,
   ): Promise<Category> {
     this.logger.log(
-      `Updating category. Category ID: ${id}, User ID: ${userId}`,
+      `Updating category. Category ID: ${id}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!Types.ObjectId.isValid(id)) {
       this.logger.warn(
-        `Invalid category ID: ${id}`,
+        `Invalid category ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -247,9 +257,10 @@ export class CategoryService {
       const existingCategory =
         await this.mongo.models.category
           .findOne({
+            tenantId: this.mongo.toObjectId(tenantId),
             name: dto.name,
             _id: {
-              $ne: id,
+              $ne: this.mongo.toObjectId(id),
             },
           })
           .lean()
@@ -257,7 +268,7 @@ export class CategoryService {
 
       if (existingCategory) {
         this.logger.warn(
-          `Duplicate category name found. Name: ${dto.name}`,
+          `Duplicate category name found. Name: ${dto.name}, Tenant ID: ${tenantId}`,
         );
 
         throw new ConflictException(
@@ -277,8 +288,9 @@ export class CategoryService {
       await this.mongo.models.category
         .findOneAndUpdate(
           {
-            _id: id,
+            _id: this.mongo.toObjectId(id),
             isActive: true,
+            tenantId: this.mongo.toObjectId(tenantId),
           },
           updateData,
           {
@@ -291,7 +303,7 @@ export class CategoryService {
 
     if (!updatedCategory) {
       this.logger.warn(
-        `Category not found while updating. Category ID: ${id}`,
+        `Category not found while updating. Category ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -310,17 +322,18 @@ export class CategoryService {
    * Activate or deactivate category
    */
   async updateStatus(
+    tenantId: string,
     id: string,
     isActive: boolean,
     userId: string,
   ): Promise<Category> {
     this.logger.log(
-      `Updating category status. Category ID: ${id}, Active: ${isActive}, User ID: ${userId}`,
+      `Updating category status. Category ID: ${id}, Active: ${isActive}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!Types.ObjectId.isValid(id)) {
       this.logger.warn(
-        `Invalid category ID: ${id}`,
+        `Invalid category ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -333,7 +346,7 @@ export class CategoryService {
     const category =
       await this.mongo.models.category
         .findOneAndUpdate(
-          { _id: id },
+          { _id: this.mongo.toObjectId(id), tenantId: this.mongo.toObjectId(tenantId) },
           {
             isActive,
             updatedBy,
@@ -348,7 +361,7 @@ export class CategoryService {
 
     if (!category) {
       this.logger.warn(
-        `Category not found while updating status. Category ID: ${id}`,
+        `Category not found while updating status. Category ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -357,7 +370,7 @@ export class CategoryService {
     }
 
     this.logger.log(
-      `Category status updated successfully. Category ID: ${id}, Active: ${isActive}`,
+      `Category status updated successfully. Category ID: ${id}, Active: ${isActive}, Tenant ID: ${tenantId}`,
     );
 
     return category as Category;

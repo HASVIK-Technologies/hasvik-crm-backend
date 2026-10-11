@@ -56,8 +56,10 @@ export class FollowUpController {
   ) {
     // Replace with authenticated user ID
     const userId = req.user.userId;
+    const tenantId = req.user.tenantId;
 
     return await this.followUpService.create(
+      tenantId,
       dto,
       userId,
     );
@@ -79,8 +81,10 @@ export class FollowUpController {
   })
   async findAll(
     @Query() query: FollowUpFilterDto,
+    @Req() req: any
   ) {
-    return await this.followUpService.findAll(query);
+    const tenantId = req.user.tenantId;
+    return await this.followUpService.findAll(tenantId, query);
   }
 
   /**
@@ -98,8 +102,11 @@ export class FollowUpController {
   })
   async findByBusiness(
     @Param('businessId') businessId: string,
+    @Req() req: any
   ) {
+    const tenantId = req.user.tenantId;
     return await this.followUpService.findByBusiness(
+      tenantId,
       businessId,
     );
   }
@@ -119,8 +126,11 @@ export class FollowUpController {
   })
   async findByAssignedUser(
     @Param('userId') userId: string,
+    @Req() req: any
   ) {
+    const tenantId = req.user.tenantId;
     return await this.followUpService.findByAssignedUser(
+      tenantId,
       userId,
     );
   }
@@ -135,8 +145,9 @@ export class FollowUpController {
     status: 200,
     description: 'Follow-ups retrieved successfully.',
   })
-  async getKpis(@Query() query: FollowUpKPIsDto) {
-    return await this.followUpService.getKpis(query);
+  async getKpis(@Query() query: FollowUpKPIsDto, @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return await this.followUpService.getKpis(tenantId, query);
   }
 
   @Get('statuses')
@@ -168,8 +179,10 @@ export class FollowUpController {
   })
   async findById(
     @Param('id') id: string,
+    @Req() req: any
   ) {
-    return await this.followUpService.findById(id);
+    const tenantId = req.user.tenantId;
+    return await this.followUpService.findById(tenantId, id);
   }
 
   @Patch(':id/status')
@@ -180,8 +193,10 @@ export class FollowUpController {
     @Req() req: any
   ) {
     const userId = req.user.userId;
+    const tenantId = req.user.tenantId;
 
     return this.followUpService.updateStatus(
+      tenantId,
       id,
       dto.status,
       userId
@@ -210,7 +225,9 @@ export class FollowUpController {
   ) {
 
     const userId = req.user.userId;
+    const tenantId = req.user.tenantId;
     return await this.followUpService.update(
+      tenantId,
       id,
       dto,
       userId

@@ -2,6 +2,7 @@ import { Schema, Types } from 'mongoose';
 
 export interface RefreshTokenDocument {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   userId: Types.ObjectId;
   jti: string;
   tokenHash: string;
@@ -13,6 +14,12 @@ export interface RefreshTokenDocument {
 
 export const RefreshTokenSchema = new Schema<RefreshTokenDocument>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+    
     userId: {
       type: Schema.Types.ObjectId,
       required: true,

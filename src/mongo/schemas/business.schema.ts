@@ -37,6 +37,11 @@ const BusinessLocationSchema: Schema<BusinessLocation> =
 
 export const BusinessSchema: Schema<Business> = new Schema<Business>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,

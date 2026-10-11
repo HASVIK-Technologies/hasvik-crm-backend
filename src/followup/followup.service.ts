@@ -6,12 +6,12 @@ import {
 import { isObjectIdOrHexString, Types } from 'mongoose';
 
 import { MongoService } from '../mongo/mongo.service';
-import { FollowUp, Note } from '../mongo/interfaces';
+import { FollowUp } from '../mongo/interfaces';
 
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { UpdateFollowUpDto } from './dto/update-follow-up.dto';
 import { FollowUpFilterDto, FollowUpKPIsDto } from './dto/get-follow-up-filter.dto';
-import { FollowUpStatus, NoteEntityType } from '../mongo/enums';
+import { FollowUpStatus } from '../mongo/enums';
 import { FollowUpKpiResponse } from './interface/kpis-response';
 import moment from 'moment-timezone';
 import { FollowUpResponse } from './interface/followup-response';
@@ -26,16 +26,17 @@ export class FollowUpService {
 
   // CREATE FOLLOW-UP
   async create(
+    tenantId: string,
     data: CreateFollowUpDto,
     userId: string,
   ): Promise<FollowUpResponse> {
     this.logger.log(
-      `Creating follow-up. Businesgs ID: ${data.businessId}, Assigned To: ${data.assignedTo}, User ID: ${userId}`,
+      `Creating follow-up. Businesgs ID: ${data.businessId}, Assigned To: ${data.assignedTo}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!isObjectIdOrHexString(data.businessId)) {
       this.logger.warn(
-        `Invalid business ID while creating follow-up: ${data.businessId}`,
+        `Invalid business ID while creating follow-up: ${data.businessId}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -45,7 +46,7 @@ export class FollowUpService {
 
     if (!isObjectIdOrHexString(data.assignedTo)) {
       this.logger.warn(
-        `Invalid assigned user ID while creating follow-up: ${data.assignedTo}`,
+        `Invalid assigned user ID while creating follow-up: ${data.assignedTo}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -56,12 +57,13 @@ export class FollowUpService {
     // Verify business exists
     const business = await this.mongo.models.business.findOne({
       _id: this.mongo.toObjectId(data.businessId),
+      tenantId: this.mongo.toObjectId(tenantId),
       isActive: true,
     });
 
     if (!business) {
       this.logger.warn(
-        `Business not found while creating follow-up. Business ID: ${data.businessId}`,
+        `Business not found while creating follow-up. Business ID: ${data.businessId}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -72,12 +74,13 @@ export class FollowUpService {
     // Verify assigned user exists
     const user = await this.mongo.models.user.findOne({
       _id: this.mongo.toObjectId(data.assignedTo),
+      tenantId: this.mongo.toObjectId(tenantId),
       isActive: true,
     });
 
     if (!user) {
       this.logger.warn(
-        `Assigned user not found while creating follow-up. User ID: ${data.assignedTo}`,
+        `Assigned user not found while creating follow-up. User ID: ${data.assignedTo}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -89,6 +92,7 @@ export class FollowUpService {
     const { ...followUpData } = data;
     // Create follow-up
     const followUp = new this.mongo.models.followUp({
+      tenantId: this.mongo.toObjectId(tenantId),
       ...followUpData,
       createdBy: this.mongo.toObjectId(userId),
     });
@@ -106,7 +110,7 @@ export class FollowUpService {
     ]);
 
     this.logger.log(
-      `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}`,
+      `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}, Tenant ID: ${tenantId}`,
     );
 
     return this.mapFollowUpResponse(
@@ -116,15 +120,16 @@ export class FollowUpService {
 
   // GET FOLLOW-UP BY ID
   async findById(
+    tenantId: string,
     id: string,
   ): Promise<FollowUpResponse> {
     this.logger.log(
-      `Fetching follow-up by ID: ${id}`,
+      `Fetching follow-up by ID: ${id}, Tenant ID: ${tenantId}`,
     )
 
     if (!isObjectIdOrHexString(id)) {
       this.logger.warn(
-        `Invalid follow-up ID: ${id}`,
+        `Invalid follow-up ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -133,7 +138,7 @@ export class FollowUpService {
     }
 
     const followUp = await this.mongo.models.followUp
-      .findById(this.mongo.toObjectId(id))
+     . findOne({ _id: this.mongo.toObjectId(id), tenantId })
       .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
       .populate('assignedTo', '_id fullName')
       .lean()
@@ -141,7 +146,7 @@ export class FollowUpService {
 
     if (!followUp) {
       this.logger.warn(
-        `Follow-up not found. Follow-up ID: ${id}`,
+        `Follow-up not found. Follow-up ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -150,7 +155,7 @@ export class FollowUpService {
     }
 
     this.logger.log(
-      `Follow-up fetched successfully. Follow-up ID: ${id}`,
+      `Follow-up fetched successfully. Follow-up ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     return {...this.mapFollowUpResponse(followUp)};
@@ -158,13 +163,14 @@ export class FollowUpService {
 
   // GET ALL FOLLOW-UPS
   async findAll(
+    tenantId: string,
     query: FollowUpFilterDto,
   ): Promise<{
     data: FollowUpResponse[];
     total: number;
   }> {
     const filter: Record<string, any> =
-      this.filterforGetFollowUps(query);
+      this.filterforGetFollowUps(tenantId, query);
 
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
@@ -264,10 +270,11 @@ export class FollowUpService {
 
   // GET BUSINESS FOLLOW-UP HISTORY
   async findByBusiness(
+    tenantId: string,
     businessId: string,
   ): Promise<FollowUpResponse[]> {
     this.logger.log(
-      `Fetching follow-up history. Business ID: ${businessId}`,
+      `Fetching follow-up history. Business ID: ${businessId}, Tenant Id: ${tenantId}`,
     );
 
     if (!isObjectIdOrHexString(businessId)) {
@@ -285,6 +292,7 @@ export class FollowUpService {
         // 1. Filter by business
         {
           $match: {
+            tenantId: this.mongo.toObjectId(tenantId),
             businessId: this.mongo.toObjectId(businessId),
           },
         },
@@ -360,6 +368,7 @@ export class FollowUpService {
   
 
   filterforGetFollowUps(
+    tenantId: string,
     query: FollowUpFilterDto,
   ): Record<string, any> {
 
@@ -377,7 +386,7 @@ export class FollowUpService {
     const tomorrowStart = todayStart.clone().add(1, 'day');
 
     const conditions: Record<string, any>[] = [];
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = { tenantId: this.mongo.toObjectId(tenantId) };
 
     // Business filter
     if (businessId) {
@@ -440,10 +449,11 @@ export class FollowUpService {
   
   // GET USER FOLLOW-UPS
   async findByAssignedUser(
+    tenantId: string,
     userId: string,
   ): Promise<FollowUpResponse[]> {
     this.logger.log(
-      `Fetching follow-ups for assigned user. User ID: ${userId}`,
+      `Fetching follow-ups for assigned user. User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!isObjectIdOrHexString(userId)) {
@@ -455,13 +465,14 @@ export class FollowUpService {
         'Invalid user id.',
       );
     }
-
+''
     const followUps =
       await this.mongo.models.followUp.aggregate([
         // 1. Filter by assigned user
         {
           $match: {
             assignedTo: this.mongo.toObjectId(userId),
+            tenantId: this.mongo.toObjectId(tenantId)
           },
         },
 
@@ -536,6 +547,7 @@ export class FollowUpService {
 
   // UPDATE FOLLOW-UP
   async update(
+    tenantId: string,
     id: string,
     dto: UpdateFollowUpDto,
     userId: string,
@@ -556,8 +568,8 @@ export class FollowUpService {
 
     const followUp =
       await this.mongo.models.followUp
-        .findByIdAndUpdate(
-          id,
+        .findOneAndUpdate(
+          { _id: id, tenantId: this.mongo.toObjectId(tenantId) },
           dto,
           {
             new: true,
@@ -571,7 +583,7 @@ export class FollowUpService {
 
     if (!followUp) {
       this.logger.warn(
-        `Follow-up not found while updating. Follow-up ID: ${id}`,
+        `Follow-up not found while updating. Follow-up ID: ${id}, Tenant ID: ${tenantId}`,
       );
 
       throw new NotFoundException(
@@ -580,13 +592,13 @@ export class FollowUpService {
     }
 
     this.logger.log(
-      `Follow-up updated successfully. Follow-up ID: ${id}`,
+      `Follow-up updated successfully. Follow-up ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
     return this.mapFollowUpResponse(followUp);
   }
 
-  async getKpis(query: FollowUpKPIsDto): Promise<FollowUpKpiResponse> {
+  async getKpis(tenantId: string, query: FollowUpKPIsDto): Promise<FollowUpKpiResponse> {
     this.logger.log(
       `Fetching follow-up KPIs.`,
     );
@@ -594,7 +606,7 @@ export class FollowUpService {
     const startOfToday = moment.utc().startOf('day');
     const startOfTomorrow = moment.utc().add(1, 'day').startOf('day');
 
-    const filter: Record<string, any> = this.filterforGetFollowUps(query);
+    const filter: Record<string, any> = this.filterforGetFollowUps(tenantId, query);
 
     const pipeline: any = [
       {
@@ -719,12 +731,13 @@ export class FollowUpService {
   }
 
   async updateStatus(
+    tenantId: string,
     id: string,
     status: FollowUpStatus.COMPLETED | FollowUpStatus.CANCELLED,
     userId: string,
   ): Promise<FollowUpResponse> {
     this.logger.log(
-      `Updating follow-up status. Follow-up ID: ${id}, Status: ${status}, User ID: ${userId}`,
+      `Updating follow-up status. Follow-up ID: ${id}, Status: ${status}, User ID: ${userId}, Tenant ID: ${tenantId}`,
     );
 
     if (!isObjectIdOrHexString(id)) {
@@ -755,6 +768,7 @@ export class FollowUpService {
         .findOneAndUpdate(
           {
             _id: this.mongo.toObjectId(id),
+            tenantId: this.mongo.toObjectId(tenantId),
           },
           {
             $set: update,
@@ -776,7 +790,7 @@ export class FollowUpService {
     }
 
     this.logger.log(
-      `Follow-up status updated successfully. Follow-up ID: ${id}, Status: ${status}`,
+      `Follow-up status updated successfully. Follow-up ID: ${id}, Status: ${status}, Tenant ID: ${tenantId}`,
     );
 
     return this.mapFollowUpResponse(followUp);

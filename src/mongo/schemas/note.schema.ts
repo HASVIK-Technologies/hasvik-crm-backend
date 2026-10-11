@@ -4,6 +4,12 @@ import { Note } from '../interfaces';
 
 export const NoteSchema : Schema<Note> = new Schema<Note>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+    
     entityType: {
       type: String,
       enum: Object.values(NoteEntityType),

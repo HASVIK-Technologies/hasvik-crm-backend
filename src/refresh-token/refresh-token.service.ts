@@ -5,6 +5,8 @@ import { MongoService } from 'src/mongo/mongo.service';
 
 @Injectable()
 export class RefreshTokenService {
+  private readonly tenantId = process.env.tenantId ?? "hasvik";
+
   constructor(
     private readonly mongo: MongoService,
   ) {}
@@ -14,9 +16,10 @@ export class RefreshTokenService {
     jti: string;
     tokenHash: string;
     expiresAt: Date;
+    tenantId: string;
   }) {
     return await this.mongo.models.refreshToken.findOneAndUpdate(
-      { userId: new Types.ObjectId(data.userId) },
+      { userId: new Types.ObjectId(data.userId), tenantId: this.mongo.toObjectId(data.tenantId) },
       {
         $set: {
           jti: data.jti,

@@ -24,6 +24,7 @@ export class UserService {
 
   // CREATE USER
   async create(
+    tenantId: string, 
     data: CreateUserDto,
   ): Promise<UserResponse> {
     this.logger.log(
@@ -34,6 +35,7 @@ export class UserService {
       await this.mongo.models.user
         .findOne({
           email: data.email,
+          tenantId: this.mongo.toObjectId(tenantId),
         })
         .exec();
 
@@ -53,6 +55,7 @@ export class UserService {
     const user = new this.mongo.models.user({
       ...data,
       password: hashedPassword,
+      tenantId: this.mongo.toObjectId(tenantId),
     });
 
     const createdUser = await user.save();
@@ -89,7 +92,7 @@ export class UserService {
 
     const user =
       await this.mongo.models.user
-        .findById(id)
+        .findOne({ _id: this.mongo.toObjectId(id) })
         .select('-password')
         .lean()
         .exec();
@@ -113,6 +116,7 @@ export class UserService {
 
   // GET ALL USERS
   async findAll(
+    tenantId: string,
     query: UserFilterDto,
   ): Promise<{
     data: UserResponse[];
@@ -132,7 +136,9 @@ export class UserService {
       `Fetching users. Page: ${page}, Limit: ${limit}, Search: ${search || 'none'}`,
     );
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+      tenantId: this.mongo.toObjectId(tenantId)
+    };
 
     if (search) {
       filter.$or = [
@@ -193,6 +199,7 @@ export class UserService {
 
   // UPDATE USER
   async update(
+    tenantId: string,
     id: string,
     data: UpdateUserDto,
   ): Promise<UserResponse> {
@@ -216,8 +223,9 @@ export class UserService {
         await this.mongo.models.user.findOne({
           email: data.email,
           _id: {
-            $ne: id,
+            $ne: this.mongo.toObjectId(id),
           },
+          tenantId: this.mongo.toObjectId(tenantId),
         });
 
       if (existingUser) {
@@ -250,8 +258,11 @@ export class UserService {
 
     const user =
       await this.mongo.models.user
-        .findByIdAndUpdate(
-          id,
+        .findOneAndUpdate(
+          {
+            _id: this.mongo.toObjectId(id),
+            tenantId: this.mongo.toObjectId(tenantId),
+          },
           updateData,
           {
             new: true,
@@ -281,6 +292,7 @@ export class UserService {
 
   // SOFT DELETE USER
   async deleteUser(
+    tenantId: string,
     id: string,
   ): Promise<{ message: string }> {
     this.logger.log(
@@ -301,8 +313,9 @@ export class UserService {
       await this.mongo.models.user
         .findOneAndUpdate(
           {
-            _id: id,
+            _id: this.mongo.toObjectId(id),
             isActive: true,
+            tenantId: this.mongo.toObjectId(tenantId),
           },
           {
             isActive: false,
@@ -337,6 +350,7 @@ export class UserService {
    * Get autocomplete suggestions for users
    */
   async autocomplete(
+    tenantId: string,
     search?: string,
   ): Promise<User[]> {
     this.logger.log(
@@ -345,6 +359,7 @@ export class UserService {
 
     const filter: Record<string, any> = {
       isActive: true,
+      tenantId: this.mongo.toObjectId(tenantId),
     };
 
     if (search) {
@@ -370,11 +385,11 @@ export class UserService {
     return users as User[];
   }
 
-  async findByEmail(email: string) {
+  async findByEmail( email: string) {
     return this.mongo.models.user
       .findOne({
         email: email.toLowerCase().trim(),
-        isActive: true,
+        isActive: true
       })
       .select('+password')
       .exec();

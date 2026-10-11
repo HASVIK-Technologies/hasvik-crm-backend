@@ -4,6 +4,12 @@ import {FollowUpType,FollowUpStatus } from '../enums'
 
 export const FollowUpSchema: Schema<FollowUp> = new Schema<FollowUp>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+    
     businessId: {
       type: Types.ObjectId,
       ref: 'Business',

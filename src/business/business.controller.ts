@@ -47,8 +47,12 @@ export class BusinessController {
     status: 200,
     description: 'Businesses retrieved successfully.',
   })
-  async autocomplete(@Query() query: BusinessAutocompleteDto) {
-    return await this.businessService.autocomplete(query.search);
+  async autocomplete(
+    @Query() query: BusinessAutocompleteDto,
+    @Req() req: any
+  ) {
+    const tenantId = req.user.tenantId;
+    return await this.businessService.autocomplete(tenantId, query.search);
   }
   
   @Get('status')
@@ -75,8 +79,12 @@ export class BusinessController {
     status: 200,
     description: 'City retrieved successfully.',
   })
-  async getCity(@Query() query: BusinessAutocompleteDto) {
-    return await this.businessService.getCityAutocomplete(query.search);
+  async getCity(
+    @Query() query: BusinessAutocompleteDto, 
+    @Req() req: any
+  ) {
+    const tenantId = req.user.tenantId;
+    return await this.businessService.getCityAutocomplete(tenantId, query.search);
   }
 
   // @UseGuards(JwtAuthGuard, RolesGuard)
@@ -84,11 +92,15 @@ export class BusinessController {
   // @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Post()
   @Permissions(Permission.BUSINESS_CREATE)
-  create(@Body() dto: CreateBusinessDto, @Req() req: any) {
+  create(
+    @Body() dto: CreateBusinessDto, 
+    @Req() req: any
+  ) {
     // Replace with authenticated user ID
     const userId = req.user.userId;
+    const tenantId = req.user.tenantId;
 
-    return this.businessService.create(dto, userId);
+    return this.businessService.create(tenantId, dto, userId);
   }
 
   @Get()
@@ -97,8 +109,12 @@ export class BusinessController {
     summary: 'Get businesses',  
     description: 'Returns a paginated list of businesses with optional filters.',
   })
-  async findAll(@Query() query: BusinessFilterDto) {
-    return await this.businessService.findAll(query);
+  async findAll(
+    @Query() query: BusinessFilterDto,
+    @Req() req: any
+  ) {
+    const tenantId = req.user.tenantId;
+    return await this.businessService.findAll(tenantId, query);
   }
 
   @Get('kpis')
@@ -111,8 +127,12 @@ export class BusinessController {
     status: 200,
     description: 'Businesses retrieved successfully.',
   })
-  async getKpis(@Query() query: BusinessKPIsDto) {
-    return await this.businessService.getKpis(query);
+  async getKpis(
+    @Query() query: BusinessKPIsDto,
+    @Req() req: any
+  ) {
+    const tenantId = req.user.tenantId;
+    return await this.businessService.getKpis(tenantId, query);
   }
 
 
@@ -130,8 +150,12 @@ export class BusinessController {
     status: 404,
     description: 'Business not found.',
   })
-  async findById(@Param('id') id: string) {
-    return await this.businessService.findById(id);
+  async findById(
+    @Param('id') id: string, 
+    @Req() req: any
+  ) {
+    const tenantId = req.user.tenantId;
+    return await this.businessService.findById(tenantId, id);
   }
 
   @Patch(':id')
@@ -155,7 +179,8 @@ export class BusinessController {
   ) {
     // Replace with authenticated user ID
     const userId = req.user.userId;
-    return await this.businessService.update(id, dto, userId);
+    const tenantId = req.user.tenantId;
+    return await this.businessService.update(tenantId, id, dto, userId);
   }
 
   @Delete(':id')
@@ -163,6 +188,7 @@ export class BusinessController {
   async delete(@Param('id') id: string, @Req() req: any) {
     // Replace with authenticated user ID
     const userId = req.user.userId;
-    return await this.businessService.delete(id, userId);
+    const tenantId = req.user.tenantId;
+    return await this.businessService.delete(tenantId, id, userId);
   }
 }

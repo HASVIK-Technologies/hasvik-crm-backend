@@ -4,6 +4,8 @@ import {FollowUpType,FollowUpStatus } from '../enums'
 export interface FollowUp {
   _id: Types.ObjectId;
 
+  tenantId: Types.ObjectId;
+  
   businessId: Types.ObjectId;
 
   assignedTo: Types.ObjectId;

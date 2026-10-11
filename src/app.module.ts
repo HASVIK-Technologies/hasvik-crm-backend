@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { RefreshTokenModule } from './refresh-token/refresh-token.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.module';
+import { TenantModule } from './tenant/tenant.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.mo
     RefreshTokenModule,
     SubscriptionModule,
     SubscriptionPlanModule,
+    TenantModule,
   ],
   controllers: [AppController],
   providers: [AppService],

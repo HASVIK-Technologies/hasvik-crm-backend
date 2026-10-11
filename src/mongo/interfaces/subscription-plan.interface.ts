@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { SubscriptionBillingCycle } from "../enums";
 
 export interface ISubscriptionPlanFeature {
@@ -14,6 +15,7 @@ export interface ISubscriptionPlanLimits {
 }
 
 export interface ISubscriptionPlan {
+  tenantId: Types.ObjectId;
   name: string;
   code: string;
   description?: string;

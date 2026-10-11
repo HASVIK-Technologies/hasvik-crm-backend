@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 export interface Category {
   _id: Types.ObjectId;
 
+  tenantId: Types.ObjectId;
+  
   name: string;
 
   description?: string;

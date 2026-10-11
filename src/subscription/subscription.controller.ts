@@ -8,6 +8,8 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -21,9 +23,12 @@ import { SubscriptionService } from './subscription.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { ActivateSubscriptionDto } from './dto/activate-subscription.dto';
 import { RenewSubscriptionDto } from './dto/renew-subscription.dto';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('Subscriptions')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('subscriptions')
 export class SubscriptionController {
   constructor(
@@ -44,8 +49,12 @@ export class SubscriptionController {
     status: HttpStatus.CONFLICT,
     description: 'Business already has an active subscription',
   })
-  create(@Body() dto: CreateSubscriptionDto) {
-    return this.subscriptionService.create(dto);
+  create(
+    @Body() dto: CreateSubscriptionDto, 
+    @Req() req: any
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.subscriptionService.create(tenantId, dto);
   }
 
   @Get()
@@ -54,8 +63,9 @@ export class SubscriptionController {
     status: HttpStatus.OK,
     description: 'Subscriptions retrieved successfully',
   })
-  findAll() {
-    return this.subscriptionService.findAll();
+  findAll( @Req() req: any ) {
+    const tenantId = req.user.tenantId;
+    return this.subscriptionService.findAll(tenantId);
   }
 
   @Get(':id')
@@ -73,8 +83,9 @@ export class SubscriptionController {
     status: HttpStatus.NOT_FOUND,
     description: 'Subscription not found',
   })
-  findOne(@Param('id') id: string) {
-    return this.subscriptionService.findOne(id);
+  findOne(@Param('id') id: string , @Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.subscriptionService.findOne(tenantId, id );
   }
 
   @Patch(':id/activate')
@@ -95,8 +106,10 @@ export class SubscriptionController {
   activate(
     @Param('id') id: string,
     @Body() dto: ActivateSubscriptionDto,
+    @Req() req: any
   ) {
-    return this.subscriptionService.activate(id, dto);
+    const tenantId = req.user.tenantId;
+    return this.subscriptionService.activate(tenantId, id, dto );
   }
 
   @Patch(':id/renew')
@@ -121,7 +134,9 @@ export class SubscriptionController {
   renew(
     @Param('id') id: string,
     @Body() dto: RenewSubscriptionDto,
+    @Req() req: any
   ) {
-    return this.subscriptionService.renew(id, dto);
+    const tenantId = req.user.tenantId;
+    return this.subscriptionService.renew(tenantId, id, dto);
   }
 }

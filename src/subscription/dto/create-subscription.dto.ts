@@ -11,10 +11,10 @@ import {
 export class CreateSubscriptionDto {
   @ApiProperty({
     example: '68f123456789012345678901',
-    description: 'ID of the business receiving the subscription',
+    description: 'ID of the tenant receiving the subscription',
   })
   @IsMongoId()
-  businessId!: string;
+  tenantId!: string;
 
   @ApiProperty({
     example: '68f223456789012345678902',
@@ -49,14 +49,4 @@ export class CreateSubscriptionDto {
   })
   @IsOptional()
   autoRenew?: boolean;
-
-  @ApiPropertyOptional({
-    example: 'Assigned during onboarding',
-    description: 'Internal notes about this subscription',
-    maxLength: 1000,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  notes?: string;
 }
