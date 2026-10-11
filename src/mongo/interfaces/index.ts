@@ -6,3 +6,5 @@ export * from './category.interface';
 
 export * from './note.interface';
 export * from './user.interface';
+export * from './subscription.interface';
+export * from './subscription-plan.interface';

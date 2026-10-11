@@ -10,6 +10,8 @@ import { NoteModule } from './note/note.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { RefreshTokenModule } from './refresh-token/refresh-token.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { RefreshTokenModule } from './refresh-token/refresh-token.module';
     UserModule,
     AuthModule,
     RefreshTokenModule,
+    SubscriptionModule,
+    SubscriptionPlanModule,
   ],
   controllers: [AppController],
   providers: [AppService],

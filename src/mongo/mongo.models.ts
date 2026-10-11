@@ -1,7 +1,7 @@
 import mongoose, { Collection,Document,Model, Schema } from 'mongoose';
 
-import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, UserSchema } from './schemas';
-import type { Business, Category, FollowUp, Note, User } from './interfaces';
+import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, SubscriptionPlanSchema, SubscriptionSchema, UserSchema } from './schemas';
+import type { Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note, User } from './interfaces';
 import { RefreshTokenSchema } from './schemas/refresh-token.schema';
 import { RefreshToken } from './interfaces/refresh-token.interface';
 
@@ -42,6 +42,16 @@ const SCHEMAS: SchemaDefinition[] = [
     name: 'RefreshToken',
     schema: RefreshTokenSchema,
   },
+  {
+    key: 'subscriptionPlan',
+    name: 'SubscriptionPlan',
+    schema: SubscriptionPlanSchema,
+  },
+   {
+    key: 'subscription',
+    name: 'Subscription',
+    schema: SubscriptionSchema,
+  },
 ];
 
 export class MongoModels {
@@ -52,7 +62,9 @@ export class MongoModels {
   readonly note!: Model<Note>;
   readonly user!: Model<User>;
   readonly refreshToken!: Model<RefreshToken>
-  
+  readonly subscriptionPlan!: Model<ISubscriptionPlan>;
+  readonly subscription!: Model<ISubscription>;
+
   // Existing MongoDB collection; no Mongoose schema required 
   readonly city!: Collection<Document>;
 
