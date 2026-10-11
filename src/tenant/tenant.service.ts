@@ -55,7 +55,7 @@ export class TenantService {
           
       return tenant;
     } catch (error) {
-      this.handleMongoError(error);
+      throw error;
     }
   }
 
@@ -113,7 +113,7 @@ export class TenantService {
 
       return tenant;
     } catch (error) {
-      this.handleMongoError(error);
+      throw error;
     }
   }
 
@@ -144,19 +144,5 @@ export class TenantService {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid tenant ID');
     }
-  }
-
-  private handleMongoError(error: unknown): never {
-    const mongoError = error as {
-      code?: number;
-    };
-
-    if (mongoError?.code === 11000) {
-      throw new ConflictException(
-        'A tenant with this code already exists',
-      );
-    }
-
-    throw error;
   }
 }

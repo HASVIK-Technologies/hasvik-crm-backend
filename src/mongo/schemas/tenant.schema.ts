@@ -29,5 +29,3 @@ export const TenantSchema: Schema<Tenant> = new Schema<Tenant>(
     collection: 'tenants',
   },
 );
-
-TenantSchema.index({ code: 1 }, { unique: true });
