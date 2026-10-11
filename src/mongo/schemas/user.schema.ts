@@ -6,6 +6,7 @@ export const UserSchema = new Schema<User>(
   {
     tenantId: {
       type: Schema.Types.ObjectId,
+      ref: 'Tenant',
       required: true,
       index: true,
     },

@@ -16,6 +16,7 @@ export const RefreshTokenSchema = new Schema<RefreshTokenDocument>(
   {
     tenantId: {
       type: Schema.Types.ObjectId,
+      ref: 'Tenant',
       required: true,
       index: true,
     },

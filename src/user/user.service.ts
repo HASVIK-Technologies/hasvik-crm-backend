@@ -390,10 +390,13 @@ export class UserService {
     const user = await this.mongo.models.user
       .findOne({
         email: email.toLowerCase().trim(),
-        isActive: true
+        isActive: true,
       })
       .select('+password')
-      .populate('tenantId', 'isActive')
+      .populate({
+        path: 'tenantId',
+        select: 'name code isActive',
+      })
       .exec();
 
     if (!user) {
@@ -403,7 +406,8 @@ export class UserService {
     const userData = user.toObject() as Record<string, any>;
     return {
       ...userData,
-      tenantInfo: userData.tenantId,
+      tenantId: userData.tenantId._id,
+      tenant: userData.tenantId as unknown as UserWithTenantInfo['tenant'],
     } as unknown as UserWithTenantInfo;
   }
 }

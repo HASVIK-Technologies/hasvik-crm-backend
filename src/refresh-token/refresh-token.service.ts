@@ -11,29 +11,61 @@ export class RefreshTokenService {
     private readonly mongo: MongoService,
   ) {}
 
+  // async upsert(data: {
+  //   userId: string;
+  //   jti: string;
+  //   tokenHash: string;
+  //   expiresAt: Date;
+  //   tenantId: string;
+  // }) {
+  //   return await this.mongo.models.refreshToken.findOneAndUpdate(
+  //     { userId: data.userId, 
+  //       tenantId: data.tenantId },
+  //     {
+  //       $set: {
+  //         jti: data.jti,
+  //         tokenHash: data.tokenHash,
+  //         expiresAt: data.expiresAt,
+  //         revokedAt: null,
+  //       },
+  //     },
+  //     {
+  //       upsert: true,
+  //       new: true,
+  //     },
+  //   );
+  // }
   async upsert(data: {
-    userId: string;
-    jti: string;
-    tokenHash: string;
-    expiresAt: Date;
-    tenantId: string;
-  }) {
-    return await this.mongo.models.refreshToken.findOneAndUpdate(
-      { userId: new Types.ObjectId(data.userId), tenantId: this.mongo.toObjectId(data.tenantId) },
-      {
-        $set: {
-          jti: data.jti,
-          tokenHash: data.tokenHash,
-          expiresAt: data.expiresAt,
-          revokedAt: null,
-        },
+  userId: string;
+  tenantId: string;
+  jti: string;
+  tokenHash: string;
+  expiresAt: Date;
+}) {
+  const userId = this.mongo.toObjectId(data.userId);
+
+  const tenantId = this.mongo.toObjectId(data.tenantId);
+
+  return this.mongo.models.refreshToken.findOneAndUpdate(
+    {
+      userId,
+      tenantId,
+    },
+    {
+      $set: {
+        jti: data.jti,
+        tokenHash: data.tokenHash,
+        expiresAt: data.expiresAt,
+        revokedAt: null,
       },
-      {
-        upsert: true,
-        new: true,
-      },
-    );
-  }
+    },
+    {
+      upsert: true,
+      new: true,
+      runValidators: true,
+    },
+  ).exec();
+}
 
   async findByTokenHash(tokenHash: string) {
     return this.mongo.models.refreshToken.findOne({

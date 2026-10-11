@@ -39,6 +39,7 @@ export const BusinessSchema: Schema<Business> = new Schema<Business>(
   {
     tenantId: {
       type: Schema.Types.ObjectId,
+      ref: 'Tenant',
       required: true,
       index: true,
     },

@@ -52,9 +52,9 @@ export class AuthService {
     }
 
     // Check if the tenant is active
-    if (!user.tenantInfo || !user.tenantInfo.isActive) {
+    if (!user.tenant || !user.tenant.isActive) {
       throw new BadRequestException(
-        !user.tenantInfo
+        !user.tenantId
           ? 'Tenant details not found. Please contact support.'
           : 'Tenant is not active. Please contact support.',
       );
@@ -143,11 +143,11 @@ export class AuthService {
     );
 
     await this.refreshTokenService.upsert({
-      tenantId: user.tenantId.toString(),
       userId: user.userId,
-          jti,
-          tokenHash,
-          expiresAt,
+      tenantId: user.tenantId,
+      jti,
+      tokenHash,
+      expiresAt,
     });
 
     return refreshToken;
