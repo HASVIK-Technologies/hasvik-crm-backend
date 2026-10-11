@@ -12,6 +12,7 @@ import { UserRole } from '../mongo/enums';
 import { UserService } from '../user/user.service';
 import { RefreshTokenService } from '../refresh-token/refresh-token.service';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
+import { UserWithTenantInfo } from './interfaces/user-with-tenant-info.interface';
 
 interface RefreshTokenPayload {
   tenantId: string;
@@ -40,13 +41,22 @@ export class AuthService {
    * Login user
    */
   async login(loginDto: LoginDto) {
-    const user = await this.userService.findByEmail(
+    const user: UserWithTenantInfo | null = await this.userService.findByEmailForAuthentication(
       loginDto.email,
     );
 
     if (!user || !user.isActive) {
       throw new BadRequestException(
         'Invalid email or password',
+      );
+    }
+
+    // Check if the tenant is active
+    if (!user.tenantInfo || !user.tenantInfo.isActive) {
+      throw new BadRequestException(
+        !user.tenantInfo
+          ? 'Tenant details not found. Please contact support.'
+          : 'Tenant is not active. Please contact support.',
       );
     }
 

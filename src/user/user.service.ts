@@ -13,6 +13,7 @@ import { User, UserResponse } from '../mongo/interfaces';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFilterDto } from './dto/get-user-filter.dto';
+import { UserWithTenantInfo } from 'src/auth/interfaces/user-with-tenant-info.interface';
 
 @Injectable()
 export class UserService {
@@ -385,13 +386,24 @@ export class UserService {
     return users as User[];
   }
 
-  async findByEmail( email: string) {
-    return this.mongo.models.user
+  async findByEmailForAuthentication(email: string): Promise<UserWithTenantInfo | null> {
+    const user = await this.mongo.models.user
       .findOne({
         email: email.toLowerCase().trim(),
         isActive: true
       })
       .select('+password')
+      .populate('tenantId', 'isActive')
       .exec();
+
+    if (!user) {
+      return null;
+    }
+
+    const userData = user.toObject() as Record<string, any>;
+    return {
+      ...userData,
+      tenantInfo: userData.tenantId,
+    } as unknown as UserWithTenantInfo;
   }
 }

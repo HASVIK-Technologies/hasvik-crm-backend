@@ -9,12 +9,12 @@ import {
 import { Types } from 'mongoose';
 
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { ActivateSubscriptionDto } from './dto/activate-subscription.dto';
 import { RenewSubscriptionDto } from './dto/renew-subscription.dto';
 import { MongoService } from 'src/mongo/mongo.service';
 import { SubscriptionBillingCycle, SubscriptionStatus } from 'src/mongo/enums';
 import { ISubscription } from 'src/mongo/interfaces/subscription.interface';
 import { ISubscriptionPlanSnapshot } from 'src/mongo/schemas/subscription.schema';
+import { SubscriptionStatusDto } from './dto/subscription-status.dto';
 
 
 @Injectable()
@@ -173,9 +173,9 @@ export class SubscriptionService {
   }
 
   /**
-   * Activate a pending subscription.
+   * Update the status of a subscription.
    */
-  async activate(tenantId: string, id: string, dto: ActivateSubscriptionDto) {
+  async updateStatus(tenantId: string, id: string, dto: SubscriptionStatusDto) {
     this.validateObjectId(id);
 
     try {
@@ -187,12 +187,6 @@ export class SubscriptionService {
 
       if (!subscription) {
         throw new NotFoundException('Subscription not found');
-      }
-
-      if (subscription.status === SubscriptionStatus.ACTIVE) {
-        throw new ConflictException(
-          'Subscription is already active',
-        );
       }
 
       if (
@@ -254,11 +248,11 @@ export class SubscriptionService {
 
       subscription.startDate = startDate;
       subscription.endDate = endDate;
-      subscription.status = SubscriptionStatus.ACTIVE;
+      subscription.status = dto.status;
 
       await subscription.save();
 
-      this.logger.log(`Subscription activated: ${id}`);
+      this.logger.log(`Subscription status updated: ${id}`);
 
       return subscription;
     } catch (error) {
@@ -273,7 +267,7 @@ export class SubscriptionService {
       }
 
       this.logger.error(
-        `Failed to activate subscription: ${id}`,
+        `Failed to update subscription status: ${id}`,
         error instanceof Error ? error.stack : String(error),
       );
 

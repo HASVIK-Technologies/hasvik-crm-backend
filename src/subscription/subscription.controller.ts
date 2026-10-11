@@ -21,7 +21,7 @@ import {
 
 import { SubscriptionService } from './subscription.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { ActivateSubscriptionDto } from './dto/activate-subscription.dto';
+import { SubscriptionStatusDto } from './dto/subscription-status.dto';
 import { RenewSubscriptionDto } from './dto/renew-subscription.dto';
 import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -88,28 +88,24 @@ export class SubscriptionController {
     return this.subscriptionService.findOne(tenantId, id );
   }
 
-  @Patch(':id/activate')
+  @Patch(':id/status')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Activate a subscription' })
+  @ApiOperation({ summary: 'Update subscription status' })
   @ApiParam({
     name: 'id',
     description: 'MongoDB subscription ID',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Subscription activated successfully',
+    description: 'Subscription status updated successfully',
   })
-  @ApiResponse({
-    status: HttpStatus.CONFLICT,
-    description: 'Business already has an active subscription',
-  })
-  activate(
+  updateStatus(
     @Param('id') id: string,
-    @Body() dto: ActivateSubscriptionDto,
+    @Body() dto: SubscriptionStatusDto,
     @Req() req: any
   ) {
     const tenantId = req.user.tenantId;
-    return this.subscriptionService.activate(tenantId, id, dto );
+    return this.subscriptionService.updateStatus(tenantId, id, dto );
   }
 
   @Patch(':id/renew')
