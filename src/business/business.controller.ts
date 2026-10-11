@@ -83,8 +83,7 @@ export class BusinessController {
     @Query() query: BusinessAutocompleteDto, 
     @Req() req: any
   ) {
-    const tenantId = req.user.tenantId;
-    return await this.businessService.getCityAutocomplete(tenantId, query.search);
+    return await this.businessService.getCityAutocomplete( query.search);
   }
 
   // @UseGuards(JwtAuthGuard, RolesGuard)

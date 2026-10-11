@@ -306,13 +306,11 @@ export class BusinessService {
     return business as Business[];
   }
 
-  async getCityAutocomplete(tenantId: string, search?: string ){
+  async getCityAutocomplete(search?: string ){
     this.logger.log(
       `Fetching city autocomplete. Search: ${search || 'none'}`,
     );
-    const filter: Record<string, any> = {
-      tenantId: this.mongo.toObjectId(tenantId)
-    };
+    const filter: Record<string, any> = {};
 
     if (search) {
       filter.name = {
