@@ -238,7 +238,7 @@ export class BusinessService {
           },
         },
 
-        // Nearest upcoming follow-up
+        // Nearest next follow-up
         {
           $lookup: {
             from: 'followups',
@@ -267,12 +267,12 @@ export class BusinessService {
                 },
               },
             ],
-            as: 'upcomingFollowUp',
+            as: 'nextFollowUp',
           },
         },
         {
           $unwind: {
-            path: '$upcomingFollowUp',
+            path: '$nextFollowUp',
             preserveNullAndEmptyArrays: true,
           },
         },
@@ -761,7 +761,7 @@ export class BusinessService {
           },
         },
 
-        // 7. Get nearest upcoming pending follow-up
+        // 7. Get nearest next pending follow-up
         {
           $lookup: {
             from: 'followups',
@@ -796,12 +796,12 @@ export class BusinessService {
                 },
               },
             ],
-            as: 'upcomingFollowUp',
+            as: 'nextFollowUp',
           },
         },
         {
           $unwind: {
-            path: '$upcomingFollowUp',
+            path: '$nextFollowUp',
             preserveNullAndEmptyArrays: true,
           },
         },
