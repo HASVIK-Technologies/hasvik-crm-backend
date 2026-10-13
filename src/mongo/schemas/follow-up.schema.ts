@@ -98,3 +98,10 @@ FollowUpSchema.index({
   type: 1,
   scheduledAt: 1,
 });
+
+FollowUpSchema.index({
+  tenantId: 1,
+  businessId: 1,
+  status: 1,
+  scheduledAt: 1,
+});

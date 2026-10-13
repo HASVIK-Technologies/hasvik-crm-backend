@@ -106,47 +106,191 @@ export class BusinessService {
   }
 
   // FIND BUSINESS BY ID
-  async findById(tenantId: string, id: string): Promise<BusinessResponse> {
+  async findById(
+    tenantId: string,
+    id: string,
+  ): Promise<BusinessResponse> {
     this.logger.log(
       `Fetching business by ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
-    if (!isObjectIdOrHexString(id)) {
+    if (
+      !isObjectIdOrHexString(id) ||
+      !isObjectIdOrHexString(tenantId)
+    ) {
       this.logger.warn(
-        `Invalid business ID: ${id}`,
+        `Invalid business ID or tenant ID. Business ID: ${id}`,
       );
 
-      throw new NotFoundException(
-        'Invalid business id.',
-      );
+      throw new NotFoundException('Invalid business id.');
     }
 
-    const business =
-      await this.mongo.models.business
-        .findOne({
-          _id: this.mongo.toObjectId(id),
-          tenantId: this.mongo.toObjectId(tenantId),
-        })
-        .populate('categoryId', '_id name')
-        .populate('assignedTo', '_id fullName')
-        .lean()
-        .exec();
+    const businessObjectId = this.mongo.toObjectId(id);
+    const tenantObjectId = this.mongo.toObjectId(tenantId);
+    const now = new Date();
+
+    const [business] = await this.mongo.models.business
+      .aggregate([
+        {
+          $match: {
+            _id: businessObjectId,
+            tenantId: tenantObjectId,
+          },
+        },
+
+        // Category
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'categoryId',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                },
+              },
+            ],
+            as: 'categoryId',
+          },
+        },
+        {
+          $unwind: {
+            path: '$categoryId',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // Assigned user (tenant-scoped)
+        {
+          $lookup: {
+            from: 'users',
+            let: {
+              assignedUserId: '$assignedTo',
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$_id', '$$assignedUserId'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  fullName: 1,
+                },
+              },
+            ],
+            as: 'assignedTo',
+          },
+        },
+        {
+          $unwind: {
+            path: '$assignedTo',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // Latest past follow-up
+        {
+          $lookup: {
+            from: 'followups',
+            let: {
+              businessId: '$_id',
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$businessId', '$$businessId'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                      { $lte: ['$scheduledAt', now] },
+                      { $ne: ['$status', 'CANCELLED'] },
+                    ],
+                  },
+                },
+              },
+              { $sort: { scheduledAt: -1 } },
+              { $limit: 1 },
+              {
+                $project: {
+                  _id: 1,
+                  scheduledAt: 1,
+                },
+              },
+            ],
+            as: 'lastFollowUp',
+          },
+        },
+        {
+          $unwind: {
+            path: '$lastFollowUp',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // Nearest upcoming follow-up
+        {
+          $lookup: {
+            from: 'followups',
+            let: {
+              businessId: '$_id',
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$businessId', '$$businessId'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                      //{ $gt: ['$scheduledAt', now] },
+                      { $eq: ['$status', 'SCHEDULED'] },
+                    ],
+                  },
+                },
+              },
+              { $sort: { scheduledAt: 1 } },
+              { $limit: 1 },
+              {
+                $project: {
+                  scheduledAt: 1,
+                },
+              },
+            ],
+            as: 'upcomingFollowUp',
+          },
+        },
+        {
+          $unwind: {
+            path: '$upcomingFollowUp',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ])
+      .exec();
 
     if (!business) {
       this.logger.warn(
         `Business not found. Business ID: ${id}`,
       );
 
-      throw new NotFoundException(
-        'Business not found.',
-      );
+      throw new NotFoundException('Business not found.');
     }
 
     this.logger.log(
       `Business fetched successfully. Business ID: ${id}`,
     );
 
-    //return business as Business;
     return this.mapBusinessResponse(business);
   }
 
@@ -476,47 +620,205 @@ export class BusinessService {
     data: BusinessResponse[];
     total: number;
   }> {
-    const {
-      sortBy,
-    } = query;
 
-    const page =
-      query.page !== undefined
-        ? Number(query.page)
-        : 1;
+    // const {sortBy} = query;
+    // const sort = {
+    //     [sortBy.startsWith('-') ? sortBy.slice(1) : sortBy]:
+    //       sortBy.startsWith('-') ? -1 : 1,
+    //   }
+    const page = query.page !== undefined ? Number(query.page) : 1;
+    const limit = query.limit !== undefined ? Number(query.limit) : 10;
 
-    const limit =
-      query.limit !== undefined
-        ? Number(query.limit)
-        : 10;
-
-    const filter: Record<string, any> = this.filterforGetBusinesses(tenantId, query);
+    const filter: Record<string, any> =
+      this.filterforGetBusinesses(tenantId, query);
 
     const skip = (page - 1) * limit;
+    const now = new Date();
 
-    const [businesses, total] =
-      await Promise.all([
-        this.mongo.models.business
-          .find(filter)
-          .populate('categoryId', '_id name')
-          .populate('assignedTo', '_id fullName')
-          .sort(sortBy || { createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean()
-          .exec(),
+    const [businesses, total] = await Promise.all([
+      this.mongo.models.business.aggregate([
+        // 1. Filter businesses
+        {
+          $match: filter,
+        },
 
-        this.mongo.models.business
-          .countDocuments(filter),
-      ]);
+        // 2. Sort before pagination
+        // {
+        //   $sort: { "createdAt": -1 };,
+        // },
+
+        // 3. Pagination
+        {
+          $skip: skip,
+        },
+        {
+          $limit: limit,
+        },
+
+        // 4. Populate category
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'categoryId',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                },
+              },
+            ],
+            as: 'categoryId',
+          },
+        },
+        {
+          $unwind: {
+            path: '$categoryId',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // 5. Populate assigned user with tenant isolation
+        {
+          $lookup: {
+            from: 'users',
+            let: {
+              assignedUserId: '$assignedTo',
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$_id', '$$assignedUserId'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  fullName: 1,
+                },
+              },
+            ],
+            as: 'assignedTo',
+          },
+        },
+        {
+          $unwind: {
+            path: '$assignedTo',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // 6. Get latest past follow-up
+        {
+          $lookup: {
+            from: 'followups',
+            let: {
+              businessId: '$_id',
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$businessId', '$$businessId'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                      { $lte: ['$scheduledAt', now] },
+                      { $ne: ['$status', 'CANCELLED'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $sort: {
+                  scheduledAt: -1,
+                },
+              },
+              {
+                $limit: 1,
+              },
+              {
+                $project: {
+                  _id: 1,
+                  scheduledAt: 1,
+                },
+              },
+            ],
+            as: 'lastFollowUp',
+          },
+        },
+        {
+          $unwind: {
+            path: '$lastFollowUp',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // 7. Get nearest upcoming pending follow-up
+        {
+          $lookup: {
+            from: 'followups',
+            let: {
+              businessId: '$_id',
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$businessId', '$$businessId'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                      //{ $gt: ['$scheduledAt', now] },   // to-do: Overdue should come
+                      { $eq: ['$status', 'SCHEDULED'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $sort: {
+                  scheduledAt: 1,
+                },
+              },
+              {
+                $limit: 1,
+              },
+              {
+                $project: {
+                  scheduledAt: 1,
+                },
+              },
+            ],
+            as: 'upcomingFollowUp',
+          },
+        },
+        {
+          $unwind: {
+            path: '$upcomingFollowUp',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ]).exec(),
+
+      this.mongo.models.business.countDocuments(filter).exec(),
+    ]);
 
     this.logger.log(
       `Businesses fetched successfully. Count: ${businesses.length}, Total: ${total}`,
     );
 
     return {
-      data: businesses.map((business) => this.mapBusinessResponse(business)),
-      total
+      data: businesses.map((business) =>
+        this.mapBusinessResponse(business),
+      ),
+      total,
     };
   }
 
