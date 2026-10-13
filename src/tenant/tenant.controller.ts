@@ -26,7 +26,7 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
 import { UserRole } from '../mongo/enums';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+//import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @ApiTags('Tenants')
 @Controller('tenants')
@@ -43,7 +43,7 @@ export class TenantController {
 
 
   @Get()
-  @Roles(UserRole.ADMIN)
+  //@Roles(UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Get all tenants' })
   @ApiQuery({
