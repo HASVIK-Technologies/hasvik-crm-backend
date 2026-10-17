@@ -73,6 +73,7 @@ export class AuthService {
 
     const authenticatedUser: AuthenticatedUser = {
       tenantId: user.tenantId.toString(),
+      fullName: user.fullName.toString(),
       userId: user._id.toString(),
       email: user.email,
       role: user.role,
@@ -100,6 +101,7 @@ export class AuthService {
   ): Promise<string> {
     const payload = {
       userId: user.userId,
+      fullName: user.fullName,
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
@@ -122,6 +124,7 @@ export class AuthService {
 
     const payload = {
       userId: user.userId,
+      fullName: user.fullName,
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
@@ -230,6 +233,7 @@ export class AuthService {
 
     const authenticatedUser: AuthenticatedUser = {
       tenantId: user.tenantId.toString(),
+      fullName: user.fullName.toString(),
       userId: user._id.toString(),
       email: user.email,
       role: user.role,

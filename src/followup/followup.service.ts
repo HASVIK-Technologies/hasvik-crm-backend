@@ -465,7 +465,7 @@ export class FollowUpService {
         'Invalid user id.',
       );
     }
-''
+
     const followUps =
       await this.mongo.models.followUp.aggregate([
         // 1. Filter by assigned user
