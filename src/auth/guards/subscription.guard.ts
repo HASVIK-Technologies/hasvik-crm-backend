@@ -49,7 +49,7 @@ export class SubscriptionGuard implements CanActivate {
           tenantId: this.mongo.toObjectId(tenantId),
           startDate: { $lte: now },
           endDate: { $gt: now },
-        })
+        } as any)
         .lean();
 
       if (!subscription) {
