@@ -32,7 +32,6 @@ import { UserRole } from '../mongo/enums/user-role.enum';
 @ApiTags('Subscriptions')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
 @Controller('subscriptions')  
 export class SubscriptionController {
   constructor(
@@ -40,6 +39,7 @@ export class SubscriptionController {
   ) {}
 
   @Post()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a subscription for a business' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -62,6 +62,7 @@ export class SubscriptionController {
   }
 
   @Get()
+  @Roles(UserRole.USER)
   @ApiOperation({ summary: 'Get all subscriptions' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -73,6 +74,7 @@ export class SubscriptionController {
   }
 
   @Get(':id')
+  @Roles(UserRole.USER)
   @ApiOperation({ summary: 'Get a subscription by ID' })
   @ApiParam({
     name: 'id',
@@ -93,6 +95,7 @@ export class SubscriptionController {
   }
 
   @Patch(':id/status')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update subscription status' })
   @ApiParam({
@@ -113,6 +116,7 @@ export class SubscriptionController {
   }
 
   @Patch(':id/renew')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Renew a subscription' })
   @ApiParam({
