@@ -44,34 +44,38 @@ export class SubscriptionGuard implements CanActivate {
 
         const now = moment();
 
-        const subscription = await this.mongo.models.subscription
-            .findOne({
+        const subscriptions = await this.mongo.models.subscription
+          .find({
             tenantId: this.mongo.toObjectId(tenantId),
             status: SubscriptionStatus.ACTIVE,
             startDate: { $lte: now.toDate() },
             endDate: { $gt: now.toDate() },
-            })
-            .lean();
+          })
+          .lean();
 
-        if (!subscription) {
-            throw new ForbiddenException(
+        if (subscriptions.length === 0) {
+          throw new ForbiddenException(
             'No active subscription found for this tenant.',
-            );
+          );
         }
 
-        // Validate the subscription period using Moment.js.
-        const startDate = moment(subscription.startDate);
-        const endDate = moment(subscription.endDate);
+        // Allow access if at least one subscription has a valid period.
+        const hasValidSubscription = subscriptions.some((subscription) => {
+          const startDate = moment(subscription.startDate);
+          const endDate = moment(subscription.endDate);
 
-        if (
-            !startDate.isValid() ||
-            !endDate.isValid() ||
-            !now.isSameOrAfter(startDate) ||
-            !now.isBefore(endDate)
-        ) {
-            throw new ForbiddenException(
+          return (
+            startDate.isValid() &&
+            endDate.isValid() &&
+            now.isSameOrAfter(startDate) &&
+            now.isBefore(endDate)
+          );
+        });
+
+        if (!hasValidSubscription) {
+          throw new ForbiddenException(
             'The subscription is not currently valid.',
-            );
+          );
         }
 
         return true;
