@@ -13,6 +13,8 @@ import { RefreshTokenModule } from './refresh-token/refresh-token.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.module';
 import { TenantModule } from './tenant/tenant.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ReminderModule } from './workers/reminder/reminder.module';
 
 @Module({
   imports: [
@@ -21,6 +23,7 @@ import { TenantModule } from './tenant/tenant.module';
       envFilePath: '.env',
     }),
 
+    ScheduleModule.forRoot(),
     MongoModule,
     BusinessModule,
     FollowupModule,
@@ -32,6 +35,7 @@ import { TenantModule } from './tenant/tenant.module';
     SubscriptionModule,
     SubscriptionPlanModule,
     TenantModule,
+    ReminderModule,
   ],
   controllers: [AppController],
   providers: [AppService],
