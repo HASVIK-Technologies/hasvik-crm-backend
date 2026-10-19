@@ -30,55 +30,35 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     try {
-        const tenant = await this.mongo.models.tenant.findOne({
-            _id: this.mongo.toObjectId(tenantId),
-        }).lean();
+      const tenant = await this.mongo.models.tenant.findOne({
+          _id: this.mongo.toObjectId(tenantId),
+      }).lean();
 
-        if (!tenant) {
-            throw new ForbiddenException('A valid tenant is required.');
-        }
+      if (!tenant) {
+          throw new ForbiddenException('A valid tenant is required.');
+      }
 
-        if (user.role === UserRole.ADMIN) {
-            return true;
-        }
+      if (user.role === UserRole.ADMIN) {
+          return true;
+      }
 
-        const now = moment();
+      const now = moment();
+      
+      const subscription = await this.mongo.models.subscription
+        .findOne({
+          tenantId: this.mongo.toObjectId(tenantId),
+          startDate: { $lte: now },
+          endDate: { $gt: now },
+        })
+        .lean();
 
-        const subscriptions = await this.mongo.models.subscription
-          .find({
-            tenantId: this.mongo.toObjectId(tenantId),
-            status: SubscriptionStatus.ACTIVE,
-            startDate: { $lte: now.toDate() },
-            endDate: { $gt: now.toDate() },
-          })
-          .lean();
+      if (!subscription) {
+        throw new ForbiddenException(
+          'No active subscription found for this tenant.',
+        );
+      }
 
-        if (subscriptions.length === 0) {
-          throw new ForbiddenException(
-            'No active subscription found for this tenant.',
-          );
-        }
-
-        // Allow access if at least one subscription has a valid period.
-        const hasValidSubscription = subscriptions.some((subscription) => {
-          const startDate = moment(subscription.startDate);
-          const endDate = moment(subscription.endDate);
-
-          return (
-            startDate.isValid() &&
-            endDate.isValid() &&
-            now.isSameOrAfter(startDate) &&
-            now.isBefore(endDate)
-          );
-        });
-
-        if (!hasValidSubscription) {
-          throw new ForbiddenException(
-            'The subscription is not currently valid.',
-          );
-        }
-
-        return true;
+      return true;
     } catch (error) {
       if (
         error instanceof ForbiddenException ||
