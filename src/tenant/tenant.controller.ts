@@ -25,8 +25,8 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
 import { UserRole } from '../mongo/enums';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Tenants')
 @Controller('tenants')
@@ -40,7 +40,6 @@ export class TenantController {
   create(@Body() dto: CreateTenantDto) {
     return this.tenantsService.create(dto);
   }
-
 
   @Get()
   @ApiBearerAuth()

@@ -23,11 +23,11 @@ import { SubscriptionService } from './subscription.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionStatusDto } from './dto/subscription-status.dto';
 import { RenewSubscriptionDto } from './dto/renew-subscription.dto';
-import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from 'src/mongo/enums/user-role.enum';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../mongo/enums/user-role.enum';
 
 @ApiTags('Subscriptions')
 @ApiBearerAuth()
