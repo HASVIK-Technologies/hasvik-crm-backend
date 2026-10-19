@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -23,9 +24,13 @@ import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
 import { UpdateSubscriptionPlanDto } from './dto/update-subscription-plan.dto';
 import { QuerySubscriptionPlanDto } from './dto/query-subscription-plan.dto';
 import { UpdateSubscriptionPlanStatusDto } from './dto/update-subscription-plan-status.dto';
+import { UserRole } from 'src/mongo/enums/user-role.enum';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @ApiTags('Subscription Plans')
-@ApiBearerAuth()
 @Controller('subscription-plans')
 export class SubscriptionPlanController {
   constructor(
@@ -33,6 +38,9 @@ export class SubscriptionPlanController {
   ) {}
 
   @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a subscription plan' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -78,6 +86,9 @@ export class SubscriptionPlanController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Update a subscription plan' })
   @ApiParam({
     name: 'id',
@@ -103,6 +114,9 @@ export class SubscriptionPlanController {
   }
 
   @Patch(':id/status')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Activate or deactivate a subscription plan' })
   @ApiParam({
