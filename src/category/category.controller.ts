@@ -26,12 +26,13 @@ import { CategoryAutocompleteDto } from './dto/category-autocomplete.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/enums/permission.enum';
 
 @ApiTags('Categories')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('categories')
 export class CategoryController {
   constructor(

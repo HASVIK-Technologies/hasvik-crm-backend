@@ -25,12 +25,13 @@ import { BusinessFilterDto, BusinessKPIsDto } from './dto/get-business-filter.dt
 import { BusinessAutocompleteDto } from './dto/business-autocomplete.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/enums/permission.enum';
 
 @ApiTags('Businesses')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('businesses')
 export class BusinessController {
   constructor(

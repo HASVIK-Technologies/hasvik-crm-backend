@@ -26,13 +26,14 @@ import { FollowUpService } from './followup.service';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/enums/permission.enum';
 import { UpdateFollowUpStatusDto } from './dto/Update-follow-up-status.dto';
 
 @ApiTags('Follow Ups')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('follow-ups')
 export class FollowUpController {
   constructor(

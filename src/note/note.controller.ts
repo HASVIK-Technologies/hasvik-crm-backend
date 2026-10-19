@@ -25,12 +25,13 @@ import { NoteFilterDto } from './dto/note-filter.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/enums/permission.enum';
 
 @ApiTags('Notes')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('notes')
 export class NoteController {
   constructor(private readonly noteService: NoteService) {}
