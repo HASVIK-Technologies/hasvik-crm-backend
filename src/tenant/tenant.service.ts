@@ -5,19 +5,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
-import { Tenant } from 'src/mongo/interfaces/tenant.interface';
 import { MongoService } from 'src/mongo/mongo.service';
 import { UserService } from 'src/user/user.service';
-import { User } from '../mongo/interfaces';
 import { UserRole } from 'src/mongo/enums';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @Injectable()
 export class TenantService {
+  // to-do
+  private readonly superAdmin: string = "admin@hasviktech.com";
+
   constructor(
     private readonly mongo: MongoService,
     private readonly userService: UserService,
@@ -59,8 +60,14 @@ export class TenantService {
     }
   }
 
-  async findAll(isActive?: boolean) {
-    const filter: Record<string, unknown> = {};
+  async findAll(user: AuthenticatedUser, isActive?: boolean) {
+
+    const filter: Record<string, unknown> = { };
+
+    if(user.email !== this.superAdmin) {
+      // Super admin can see all tenants
+      filter._id = this.mongo.toObjectId(user.tenantId);
+    }
 
     if (isActive !== undefined) {
       filter.isActive = isActive;

@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -53,10 +54,11 @@ export class TenantController {
     description: 'Filter tenants by active status',
   })
   findAll(
+    @Req() req: any,
     @Query('isActive', new ParseBoolPipe({ optional: true }))
-    isActive?: boolean,
+    isActive?: boolean
   ) {
-    return this.tenantsService.findAll(isActive);
+    return this.tenantsService.findAll(req.user, isActive);
   }
 
   @Get(':id')
