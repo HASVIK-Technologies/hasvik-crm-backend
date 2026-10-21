@@ -10,10 +10,14 @@ import {
 import { MongoService } from '../../mongo/mongo.service';
 import moment from 'moment';
 import { SubscriptionStatus, UserRole } from '../../mongo/enums';
+import { SubscriptionService } from '../../subscription/subscription.service';
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
-  constructor(private readonly mongo: MongoService) {}
+  constructor(
+    private readonly mongo: MongoService, 
+    private readonly subscriptionService: SubscriptionService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -41,16 +45,8 @@ export class SubscriptionGuard implements CanActivate {
       if (user.role === UserRole.ADMIN) {
           return true;
       }
-
-      const now = moment();
       
-      const subscription = await this.mongo.models.subscription
-        .findOne({
-          tenantId: this.mongo.toObjectId(tenantId),
-          startDate: { $lte: now },
-          endDate: { $gt: now },
-        } as any)
-        .lean();
+      const subscription = await this.subscriptionService.hasTenantActiveSubscriptions(tenantId);
 
       if (!subscription) {
         throw new ForbiddenException(

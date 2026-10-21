@@ -15,6 +15,7 @@ import { SubscriptionBillingCycle, SubscriptionStatus } from 'src/mongo/enums';
 import { ISubscription } from 'src/mongo/interfaces/subscription.interface';
 import { ISubscriptionPlanSnapshot } from 'src/mongo/schemas/subscription.schema';
 import { SubscriptionStatusDto } from './dto/subscription-status.dto';
+import moment from 'moment';
 
 
 @Injectable()
@@ -426,6 +427,20 @@ export class SubscriptionService {
     }
 
     return endDate;
+  }
+
+  async hasTenantActiveSubscriptions(tenantId: string) {
+    const now = moment();
+          
+    const subscription = await this.mongo.models.subscription
+      .findOne({
+        tenantId: this.mongo.toObjectId(tenantId),
+        startDate: { $lte: now },
+        endDate: { $gt: now },
+      } as any)
+      .lean();
+
+    return subscription ? true : false;
   }
 
   private validateDate(date: Date, fieldName: string): void {

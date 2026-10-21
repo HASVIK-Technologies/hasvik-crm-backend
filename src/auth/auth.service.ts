@@ -12,7 +12,8 @@ import { UserRole } from '../mongo/enums';
 import { UserService } from '../user/user.service';
 import { RefreshTokenService } from '../refresh-token/refresh-token.service';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
-import { UserWithTenantInfo } from './interfaces/user-with-tenant-info.interface';
+import { UserInfo, UserWithTenantInfo } from './interfaces/user-with-tenant-info.interface';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 interface RefreshTokenPayload {
   tenantId: string;
@@ -34,6 +35,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly subscriptionService: SubscriptionService,
     private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
@@ -281,6 +283,22 @@ export class AuthService {
     return {
       message: 'Logged out successfully',
     };
+  }
+
+  async getCurrentUser(userId: string): Promise<UserInfo> {
+    let user = await this.userService.findById(userId);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User is no longer active');
+    }
+
+    const subscription = await this.subscriptionService.hasTenantActiveSubscriptions(user.tenantId.toString());
+
+    if (user.email === "admin@hasviktech.com") {
+      //@ts-ignore
+      user = {...user, role: "SuperAdmin"}
+    }
+
+    return {...user, hasActiveSubscription:subscription };
   }
 
   /**

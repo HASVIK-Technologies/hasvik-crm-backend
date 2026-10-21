@@ -10,6 +10,7 @@ import { RefreshTokenModule } from '../refresh-token/refresh-token.module';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
     UserModule,
 
     RefreshTokenModule,
+    SubscriptionModule,
   ],
 
   controllers: [

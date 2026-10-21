@@ -142,9 +142,11 @@ export class AuthController {
     status: 401,
     description: 'Unauthorized.',
   })
-  getCurrentUser(
+  async getCurrentUser(
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return user;
+
+    const currentUser = await this.authService.getCurrentUser(user.userId);
+    return currentUser;
   }
 }
