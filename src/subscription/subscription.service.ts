@@ -21,6 +21,7 @@ import moment from 'moment';
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
+   private readonly superAdmin: string = "admin@hasviktech.com";
 
   constructor(private readonly mongo: MongoService) {}
 
@@ -135,9 +136,16 @@ export class SubscriptionService {
    * Retrieve subscriptions.
    */
   async findAll(tenantId: string) {
+    const filter: Record<string, unknown> = { };
+
+    if(user.email !== this.superAdmin) {
+      // Super admin can see all tenants
+      filter.tenantId = this.mongo.toObjectId(user.tenantId);
+    }
     try {
+      
       return await this.mongo.models.subscription
-        .find({tenantId: this.mongo.toObjectId(tenantId)})
+        .find(filter)
         .sort({ createdAt: -1 })
         .populate('tenantId')
         .populate('planId')
