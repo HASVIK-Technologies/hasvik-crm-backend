@@ -69,8 +69,7 @@ export class SubscriptionController {
     description: 'Subscriptions retrieved successfully',
   })
   findAll( @Req() req: any ) {
-    const tenantId = req.user.tenantId;
-    return this.subscriptionService.findAll(tenantId);
+    return this.subscriptionService.findAll(req.user);
   }
 
   @Get(':id')

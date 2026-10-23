@@ -16,6 +16,7 @@ import { ISubscription } from 'src/mongo/interfaces/subscription.interface';
 import { ISubscriptionPlanSnapshot } from 'src/mongo/schemas/subscription.schema';
 import { SubscriptionStatusDto } from './dto/subscription-status.dto';
 import moment from 'moment';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 
 @Injectable()
@@ -135,7 +136,7 @@ export class SubscriptionService {
   /**
    * Retrieve subscriptions.
    */
-  async findAll(tenantId: string) {
+  async findAll(user: AuthenticatedUser) {
     const filter: Record<string, unknown> = { };
 
     if(user.email !== this.superAdmin) {
