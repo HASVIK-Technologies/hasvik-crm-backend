@@ -5,6 +5,7 @@ import {
   IsIn,
   IsInt,
   IsMongoId,
+  IsNumberString,
   IsOptional,
   Max,
   Min,
@@ -32,20 +33,23 @@ export class AuditLogFilterDto {
   @IsMongoId()
   userId?: string;
 
-  @ApiPropertyOptional({ example: 1, default: 1 })
-  @Type(() => Number)
+  @ApiPropertyOptional({
+    example: '1',
+    default: '1',
+    description: 'Page number',
+  })
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  page = 1;
+  @IsNumberString()
+  page?: string;
 
-  @ApiPropertyOptional({ example: 10, default: 10 })
-  @Type(() => Number)
+  @ApiPropertyOptional({
+    example: '10',
+    default: '10',
+    description: 'Number of businesses per page',
+  })
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit = 10;
+  @IsNumberString()
+  limit?: string;
 
   @ApiPropertyOptional({
     example: 'desc',

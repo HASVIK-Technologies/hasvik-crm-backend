@@ -15,6 +15,7 @@ import { UIUserRole, UserRole } from 'src/mongo/enums';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { GetTenantFilterDto } from './dto/get-tenant-filter.dto';
 
 @Injectable()
 export class TenantService {
@@ -70,7 +71,11 @@ export class TenantService {
     }
   }
 
-  async findAll(user: AuthenticatedUser, isActive?: boolean) {
+  async findAll(user: AuthenticatedUser, query: GetTenantFilterDto,) {
+    const { isActive } = query; 
+    const page = query.page !== undefined ? Number(query.page) : 1;
+    const limit = query.limit !== undefined ? Number(query.limit) : 10;
+    const skip = (page - 1) * limit;
 
     const filter: Record<string, unknown> = { };
 
@@ -87,6 +92,8 @@ export class TenantService {
       .find(filter)
       .select('-__v')
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean()
       .exec();
   }

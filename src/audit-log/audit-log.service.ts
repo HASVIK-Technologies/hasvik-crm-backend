@@ -82,7 +82,7 @@ export class AuditLogService {
   async findAll(
     tenantId: string,
     query: AuditLogFilterDto,
-  ): Promise<{ data: AuditLog[]; total: number; page: number; limit: number }> {
+  ): Promise<{ data: AuditLog[]; total: number }> {
     const filter: Record<string, unknown> = {
       tenantId: this.mongo.toObjectId(tenantId),
     };
@@ -91,9 +91,10 @@ export class AuditLogService {
     if (query.entityType) filter.entityType = query.entityType;
     if (query.entityId) filter.entityId = this.mongo.toObjectId(query.entityId);
     if (query.userId) filter.userId = this.mongo.toObjectId(query.userId);
-
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    
+    const page = query.page !== undefined ? Number(query.page) : 1;
+    const limit = query.limit !== undefined ? Number(query.limit) : 10;
+    const skip = (page - 1) * limit;
     const sortDirection = query.sortOrder === 'asc' ? 1 : -1;
 
     const [data, total] = await Promise.all([
@@ -101,14 +102,14 @@ export class AuditLogService {
         .find(filter)
         .populate('userId', 'fullName email')
         .sort({ createdAt: sortDirection, _id: sortDirection })
-        .skip((page - 1) * limit)
+        .skip(skip)
         .limit(limit)
         .lean()
         .exec(),
       this.mongo.models.auditLog.countDocuments(filter).exec(),
     ]);
 
-    return { data, total, page, limit };
+    return { data, total };
   }
 
   async findById(tenantId: string, id: string): Promise<AuditLog> {

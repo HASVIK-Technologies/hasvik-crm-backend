@@ -28,6 +28,7 @@ import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
 import { UserRole } from '../mongo/enums';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { GetTenantFilterDto } from './dto/get-tenant-filter.dto';
 
 @ApiTags('Tenants')
 @Controller('tenants')
@@ -47,18 +48,11 @@ export class TenantController {
   @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all tenants' })
-  @ApiQuery({
-    name: 'isActive',
-    required: false,
-    type: Boolean,
-    description: 'Filter tenants by active status',
-  })
   findAll(
     @Req() req: any,
-    @Query('isActive', new ParseBoolPipe({ optional: true }))
-    isActive?: boolean
+    @Query() query: GetTenantFilterDto,
   ) {
-    return this.tenantsService.findAll(req.user, isActive);
+    return this.tenantsService.findAll(req.user, query);
   }
 
   @Get(':id')
