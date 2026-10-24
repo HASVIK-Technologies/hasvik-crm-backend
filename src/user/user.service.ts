@@ -14,6 +14,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFilterDto } from './dto/get-user-filter.dto';
 import { UserWithTenantInfo } from 'src/auth/interfaces/user-with-tenant-info.interface';
+import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
+import { UserRole } from 'src/mongo/enums/user-role.enum';
 
 @Injectable()
 export class UserService {
@@ -117,7 +119,7 @@ export class UserService {
 
   // GET ALL USERS
   async findAll(
-    tenantId: string,
+    user: AuthenticatedUser,
     query: UserFilterDto,
   ): Promise<{
     data: UserResponse[];
@@ -125,6 +127,7 @@ export class UserService {
   }> {
     const {
       search,
+      tenantId,
       role,
       isActive,
       page = 1,
@@ -137,9 +140,15 @@ export class UserService {
       `Fetching users. Page: ${page}, Limit: ${limit}, Search: ${search || 'none'}`,
     );
 
-    const filter: Record<string, any> = {
-      tenantId: this.mongo.toObjectId(tenantId)
-    };
+    const filter: Record<string, any> = {};
+    // if user is super admin, list all tenant
+    if (user.role !== UserRole.SUPERADMIN ) {
+      filter.tenantId = this.mongo.toObjectId(user.tenantId);
+    }
+    // if tenantId is coming in query filter
+    if(tenantId){
+      filter.tenantId = this.mongo.toObjectId(tenantId);
+    }
 
     if (search) {
       filter.$or = [
@@ -181,6 +190,12 @@ export class UserService {
           .sort(sort)
           .skip(skip)
           .limit(limit)
+          .populate([
+            {
+              path: 'tenantId',
+              select: '_id name',
+            }
+          ])
           .lean()
           .exec(),
 

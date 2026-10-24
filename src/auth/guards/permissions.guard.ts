@@ -36,7 +36,7 @@ export class PermissionsGuard implements CanActivate {
 
     // to-do: Implement permission later
     // ADMIN has full access
-    if (user.role === UserRole.ADMIN) {
+    if (user.role === UserRole.SUPERADMIN) {
       return true;
     }
 

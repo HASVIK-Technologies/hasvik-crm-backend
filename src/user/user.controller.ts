@@ -81,8 +81,7 @@ export class UserController {
   })
   //@Permissions(Permission.USER_READ)
   async findAll(@Query() query: UserFilterDto, @Req() req: any) {
-    const tenantId = req.user.tenantId;
-    return await this.userService.findAll(tenantId, query);
+    return await this.userService.findAll(req.user, query);
   }
 
   @Get(':id')

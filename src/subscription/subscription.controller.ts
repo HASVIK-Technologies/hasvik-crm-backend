@@ -62,7 +62,7 @@ export class SubscriptionController {
   }
 
   @Get()
-  @Roles(UserRole.USER)
+  @Roles(UserRole.ADMIN, UserRole.USER)
   @ApiOperation({ summary: 'Get all subscriptions' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -73,7 +73,7 @@ export class SubscriptionController {
   }
 
   @Get(':id')
-  @Roles(UserRole.USER)
+  @Roles(UserRole.ADMIN, UserRole.USER)
   @ApiOperation({ summary: 'Get a subscription by ID' })
   @ApiParam({
     name: 'id',
@@ -89,12 +89,11 @@ export class SubscriptionController {
     description: 'Subscription not found',
   })
   findOne(@Param('id') id: string , @Req() req: any) {
-    const tenantId = req.user.tenantId;
-    return this.subscriptionService.findOne(tenantId, id );
+    return this.subscriptionService.findOne(req.user, id );
   }
 
   @Patch(':id/status')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update subscription status' })
   @ApiParam({
@@ -110,12 +109,11 @@ export class SubscriptionController {
     @Body() dto: SubscriptionStatusDto,
     @Req() req: any
   ) {
-    const tenantId = req.user.tenantId;
-    return this.subscriptionService.updateStatus(tenantId, id, dto );
+    return this.subscriptionService.updateStatus(req.user, id, dto );
   }
 
   @Patch(':id/renew')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Renew a subscription' })
   @ApiParam({
@@ -139,7 +137,6 @@ export class SubscriptionController {
     @Body() dto: RenewSubscriptionDto,
     @Req() req: any
   ) {
-    const tenantId = req.user.tenantId;
-    return this.subscriptionService.renew(tenantId, id, dto);
+    return this.subscriptionService.renew(req.user, id, dto);
   }
 }

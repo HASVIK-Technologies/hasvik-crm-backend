@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsIn,
   IsInt,
+  IsMongoId,
   IsOptional,
   IsString,
   Max,
@@ -12,7 +13,7 @@ import {
   Min,
 } from 'class-validator';
 
-import { UserRole } from '../../mongo/enums/user-role.enum';
+import { UIUserRole } from '../../mongo/enums/user-role.enum';
 
 export class UserFilterDto {
   @ApiPropertyOptional({
@@ -28,13 +29,21 @@ export class UserFilterDto {
   search?: string;
 
   @ApiPropertyOptional({
-    example: UserRole.USER,
-    enum: UserRole,
+    example: '66aad3aed93975bc640ca81b',
+    description: 'Tenant ID associated with the user',
+  })
+  @IsOptional()
+  @IsMongoId()
+  tenantId?: string;
+
+  @ApiPropertyOptional({
+    example: UIUserRole.USER,
+    enum: UIUserRole,
     description: 'Filter users by role',
   })
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsEnum(UIUserRole)
+  role?: UIUserRole;
 
   @ApiPropertyOptional({
     example: false,

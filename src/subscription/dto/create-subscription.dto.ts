@@ -9,12 +9,6 @@ import {
 } from 'class-validator';
 
 export class CreateSubscriptionDto {
-  @ApiProperty({
-    example: '68f123456789012345678901',
-    description: 'ID of the tenant receiving the subscription',
-  })
-  @IsMongoId()
-  tenantId!: string;
 
   @ApiProperty({
     example: '68f223456789012345678902',

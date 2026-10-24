@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { UserRole } from '../../mongo/enums/user-role.enum';
+import { UIUserRole } from '../../mongo/enums/user-role.enum';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({
@@ -59,11 +59,11 @@ export class UpdateUserDto {
   password?: string;
 
   @ApiPropertyOptional({
-    example: UserRole.USER,
-    enum: UserRole,
+    example: UIUserRole.USER,
+    enum: UIUserRole,
     description: 'User role',
   })
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsEnum(UIUserRole)
+  role?: UIUserRole;
 }

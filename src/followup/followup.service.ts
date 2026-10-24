@@ -169,12 +169,21 @@ export class FollowUpService {
     data: FollowUpResponse[];
     total: number;
   }> {
+    const {isCalendarView} = query;
     const filter: Record<string, any> =
       this.filterforGetFollowUps(tenantId, query);
 
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
+
+    const limtStage = {
+        $limit: limit,
+    };
+
+    const skipStage = {
+        $skip: skip,
+    };
 
     const pipeline: any[] = [
       {
@@ -239,16 +248,11 @@ export class FollowUpService {
           scheduledAt: 1,
         },
       },
-
-      // Pagination
-      {
-        $skip: skip,
-      },
-      {
-        $limit: limit,
-      },
     ];
 
+    !isCalendarView && pipeline.push(skipStage);
+    !isCalendarView && pipeline.push(limtStage);
+    
     const [followUps, total] = await Promise.all([
       this.mongo.models.followUp.aggregate(pipeline),
 

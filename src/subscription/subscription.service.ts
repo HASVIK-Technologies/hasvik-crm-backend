@@ -11,7 +11,7 @@ import { Types } from 'mongoose';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { RenewSubscriptionDto } from './dto/renew-subscription.dto';
 import { MongoService } from 'src/mongo/mongo.service';
-import { SubscriptionBillingCycle, SubscriptionStatus } from 'src/mongo/enums';
+import { SubscriptionBillingCycle, SubscriptionStatus, UserRole } from '../mongo/enums';
 import { ISubscription } from 'src/mongo/interfaces/subscription.interface';
 import { ISubscriptionPlanSnapshot } from 'src/mongo/schemas/subscription.schema';
 import { SubscriptionStatusDto } from './dto/subscription-status.dto';
@@ -22,7 +22,6 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
-   private readonly superAdmin: string = "admin@hasviktech.com";
 
   constructor(private readonly mongo: MongoService) {}
 
@@ -31,13 +30,13 @@ export class SubscriptionService {
    * The plan snapshot is generated on the server.
    */
   async create(tenantId: string, dto: CreateSubscriptionDto) {
-    this.validateObjectId(dto.tenantId, 'tenantId');
+    this.validateObjectId(tenantId, 'tenantId');
     this.validateObjectId(dto.planId, 'planId');
 
     try {
       const [tenant, plan] = await Promise.all([
         this.mongo.models.tenant
-          .findOne({_id: this.mongo.toObjectId(dto.tenantId), isActive: true, })
+          .findOne({_id: this.mongo.toObjectId(tenantId), isActive: true, })
           .lean()
           .exec(),
 
@@ -102,7 +101,7 @@ export class SubscriptionService {
       };
 
       const subscription: ISubscription = await this.mongo.models.subscription.create({
-        tenantId: this.mongo.toObjectId(dto.tenantId),
+        tenantId: this.mongo.toObjectId(tenantId),
         planId: this.mongo.toObjectId(dto.planId),
         planSnapshot,
         status: SubscriptionStatus.PENDING,
@@ -139,7 +138,7 @@ export class SubscriptionService {
   async findAll(user: AuthenticatedUser) {
     const filter: Record<string, unknown> = { };
 
-    if(user.email !== this.superAdmin) {
+    if (user.role !== UserRole.SUPERADMIN) {
       // Super admin can see all tenants
       filter.tenantId = this.mongo.toObjectId(user.tenantId);
     }
@@ -165,11 +164,19 @@ export class SubscriptionService {
   /**
    * Retrieve one subscription.
    */
-  async findOne(tenantId: string, id: string) {
+  async findOne(user: AuthenticatedUser, id: string) {
     this.validateObjectId(id);
+    const filter: Record<string, unknown> = { 
+      _id: id
+    };
+
+    if (user.role !== UserRole.SUPERADMIN) {
+      // Super admin can see all tenants
+      filter.tenantId = this.mongo.toObjectId(user.tenantId);
+    }
 
     const subscription = await this.mongo.models.subscription
-      .findOne({_id: id, tenantId: this.mongo.toObjectId(tenantId)})
+      .findOne(filter)
       .populate('tenantId')
       .populate('planId')
       .lean()
@@ -185,15 +192,21 @@ export class SubscriptionService {
   /**
    * Update the status of a subscription.
    */
-  async updateStatus(tenantId: string, id: string, dto: SubscriptionStatusDto) {
+  async updateStatus(user: AuthenticatedUser, id: string, dto: SubscriptionStatusDto) {
     this.validateObjectId(id);
+    
+    const filter: Record<string, unknown> = { 
+      _id: id
+    };
+
+    if (user.role !== UserRole.SUPERADMIN) {
+      // Super admin can see all tenants
+      filter.tenantId = this.mongo.toObjectId(user.tenantId);
+    }
 
     try {
       const subscription =
-        await this.mongo.models.subscription.findOne({
-          _id: id,
-          tenantId: this.mongo.toObjectId(tenantId),
-        }).exec();
+        await this.mongo.models.subscription.findOne(filter).exec();
 
       if (!subscription) {
         throw new NotFoundException('Subscription not found');
@@ -237,7 +250,7 @@ export class SubscriptionService {
 
       const existingActive =
         await this.mongo.models.subscription.findOne({
-          tenantId: this.mongo.toObjectId(tenantId),
+          tenantId: this.mongo.toObjectId(user.tenantId),
           status: SubscriptionStatus.ACTIVE,
           _id: { $ne: subscription._id },
         }).lean().exec();
@@ -288,15 +301,20 @@ export class SubscriptionService {
   /**
    * Renew an eligible subscription.
    */
-  async renew(tenantId: string, id: string, dto: RenewSubscriptionDto) {
+  async renew(user: AuthenticatedUser, id: string, dto: RenewSubscriptionDto) {
     this.validateObjectId(id);
+    const filter: Record<string, unknown> = { 
+      _id: id
+    };
+
+    if (user.role !== UserRole.SUPERADMIN) {
+      // Super admin can see all tenants
+      filter.tenantId = this.mongo.toObjectId(user.tenantId);
+    }
 
     try {
       const subscription =
-        await this.mongo.models.subscription.findOne({
-          _id: id,
-          tenantId: this.mongo.toObjectId(tenantId),
-        }).exec();
+        await this.mongo.models.subscription.findOne(filter).exec();
 
       if (!subscription) {
         throw new NotFoundException('Subscription not found');

@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsMongoId,
@@ -11,6 +12,7 @@ import {
   FollowUpStatus,
   FollowUpType,
 } from '../../mongo/enums';
+import { Transform } from 'class-transformer';
 
 export class FollowUpFilterDto {
   @ApiPropertyOptional({
@@ -62,6 +64,19 @@ export class FollowUpFilterDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
+
+  @ApiPropertyOptional({
+    example: false,
+  })
+  @Transform(({ value }) => {
+      if (typeof value === 'boolean') return value;
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      return value;
+    })
+  @IsOptional()
+  @IsBoolean()
+  isCalendarView!: boolean;
 
   @ApiPropertyOptional({
     example: '1',

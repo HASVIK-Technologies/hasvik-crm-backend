@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { MongoService } from '../../mongo/mongo.service';
 import moment from 'moment';
-import { SubscriptionStatus, UserRole } from '../../mongo/enums';
+import { UserRole, SubscriptionStatus } from '../../mongo/enums';
 import { SubscriptionService } from '../../subscription/subscription.service';
 
 @Injectable()
@@ -42,7 +42,7 @@ export class SubscriptionGuard implements CanActivate {
           throw new ForbiddenException('A valid tenant is required.');
       }
 
-      if (user.role === UserRole.ADMIN) {
+      if ( (user.role === UserRole.ADMIN) || (user.role === UserRole.SUPERADMIN) ) {
           return true;
       }
       

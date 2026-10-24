@@ -31,6 +31,9 @@
 $ npm install
 ```
 
+Set `SUPERADMIN_EMAIL` in your `.env` file to the email address assigned to the
+super-admin account. See [.env.example](./.env.example) for the variable format.
+
 ## Compile and run the project
 
 ```bash

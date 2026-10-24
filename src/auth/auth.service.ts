@@ -293,11 +293,6 @@ export class AuthService {
 
     const subscription = await this.subscriptionService.hasTenantActiveSubscriptions(user.tenantId.toString());
 
-    if (user.email === "admin@hasviktech.com") {
-      //@ts-ignore
-      user = {...user, role: "SuperAdmin"}
-    }
-
     return {...user, hasActiveSubscription:subscription };
   }
 

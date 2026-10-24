@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { UserRole } from '../../mongo/enums/user-role.enum';
+import { UIUserRole } from '../../mongo/enums/user-role.enum';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -47,10 +47,10 @@ export class CreateUserDto {
   password!: string;
 
   @ApiProperty({
-    example: UserRole.USER,
-    enum: UserRole,
+    example: UIUserRole.USER,
+    enum: UIUserRole,
     description: 'User role',
   })
-  @IsEnum(UserRole)
-  role!: UserRole;
+  @IsEnum(UIUserRole)
+  role!: UIUserRole;
 }

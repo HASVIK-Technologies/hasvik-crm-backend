@@ -31,7 +31,7 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    if (user.role === UserRole.ADMIN) {
+    if (user.role === UserRole.SUPERADMIN) {
       return true;
     }
     return requiredRoles.includes(user.role);

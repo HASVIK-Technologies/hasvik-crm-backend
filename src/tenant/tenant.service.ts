@@ -11,14 +11,12 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { MongoService } from 'src/mongo/mongo.service';
 import { UserService } from 'src/user/user.service';
-import { UserRole } from 'src/mongo/enums';
+import { UIUserRole, UserRole } from 'src/mongo/enums';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @Injectable()
 export class TenantService {
   // to-do
-  private readonly superAdmin: string = "admin@hasviktech.com";
-
   constructor(
     private readonly mongo: MongoService,
     private readonly userService: UserService,
@@ -43,13 +41,13 @@ export class TenantService {
                       contactPhone,
                     });
       if(fullName && password) {
-        const user = await this.userService.create(
+        await this.userService.create(
           tenant._id.toString(),
           {
             email: contactEmail || '',
             fullName,
             password,
-            role: UserRole.ADMIN,
+            role: UIUserRole.ADMIN,
           }
         );
       }
@@ -64,7 +62,7 @@ export class TenantService {
 
     const filter: Record<string, unknown> = { };
 
-    if(user.email !== this.superAdmin) {
+    if (user.role !== UserRole.SUPERADMIN) {
       // Super admin can see all tenants
       filter._id = this.mongo.toObjectId(user.tenantId);
     }

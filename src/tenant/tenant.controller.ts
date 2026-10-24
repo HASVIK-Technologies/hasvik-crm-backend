@@ -45,7 +45,7 @@ export class TenantController {
   @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all tenants' })
   @ApiQuery({
     name: 'isActive',
@@ -70,7 +70,7 @@ export class TenantController {
   @Patch(':id/status')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @ApiOperation({ summary: 'Activate or deactivate a tenant' })
   updateStatus(
     @Param('id') id: string,
