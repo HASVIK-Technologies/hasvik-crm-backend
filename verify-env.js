@@ -61,7 +61,7 @@ for (let i = envFiles.length - 1; i >= 0; i--) {
   }
 }
 
-const keysToShow = ['MONGO_URI', 'PORT', 'NODE_ENV', 'JWT_SECRET', 'SMS_PROVIDER'];
+const keysToShow = ['MONGO_URI', 'PORT', 'NODE_ENV', 'JWT_SECRET', 'SMS_PROVIDER', 'AUDIT_LOG_ENABLED'];
 keysToShow.forEach((key) => {
   const value = merged[key];
   const masked = key.includes('SECRET') ? '***' : value;

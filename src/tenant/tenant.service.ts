@@ -13,6 +13,8 @@ import { MongoService } from 'src/mongo/mongo.service';
 import { UserService } from 'src/user/user.service';
 import { UIUserRole, UserRole } from 'src/mongo/enums';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
 
 @Injectable()
 export class TenantService {
@@ -20,6 +22,7 @@ export class TenantService {
   constructor(
     private readonly mongo: MongoService,
     private readonly userService: UserService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async create(dto: CreateTenantDto) {
@@ -40,6 +43,15 @@ export class TenantService {
                       contactEmail,
                       contactPhone,
                     });
+      await this.auditLogService.createAuditLog({
+        tenantId: tenant._id.toString(),
+        userId: undefined,
+        action: AuditLogAction.CREATE,
+        entityType: AuditLogEntityType.TENANT,
+        entityId: tenant._id.toString(),
+        details: { newData: { ...tenant } },
+      });
+
       if(fullName && password) {
         await this.userService.create(
           tenant._id.toString(),
@@ -95,7 +107,7 @@ export class TenantService {
     return tenant;
   }
 
-  async update(id: string, dto: UpdateTenantDto) {
+  async update(id: string, dto: UpdateTenantDto, userId?: string) {
     this.validateObjectId(id);
 
     try {
@@ -116,13 +128,22 @@ export class TenantService {
         throw new NotFoundException('Tenant not found');
       }
 
+      await this.auditLogService.createAuditLog({
+        tenantId: id,
+        userId,
+        action: AuditLogAction.UPDATE,
+        entityType: AuditLogEntityType.TENANT,
+        entityId: id,
+        details: { newData: dto, existingData: tenant },
+      });
+
       return tenant;
     } catch (error) {
       throw error;
     }
   }
 
-  async updateStatus(id: string, isActive: boolean) {
+  async updateStatus(id: string, isActive: boolean, userId?: string) {
     this.validateObjectId(id);
 
     const tenant = await this.mongo.models.tenant
@@ -141,6 +162,17 @@ export class TenantService {
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }
+
+    await this.auditLogService.createAuditLog({
+      tenantId: id,
+      userId,
+      action: isActive
+        ? AuditLogAction.STATUS_CHANGE
+        : AuditLogAction.DELETE,
+      entityType: AuditLogEntityType.TENANT,
+      entityId: id,
+      details: { isActive },
+    });
 
     return tenant;
   }

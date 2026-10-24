@@ -28,4 +28,7 @@ export enum Permission {
   NOTE_READ = 'note:read',
   NOTE_UPDATE = 'note:update',
   NOTE_DELETE = 'note:delete',
+
+  // Audit log
+  AUDIT_LOG_READ = 'audit_log:read',
 }

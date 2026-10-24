@@ -7,6 +7,7 @@ import { BusinessModule } from './business/business.module';
 import { FollowupModule } from './followup/followup.module';
 import { CategoryModule } from './category/category.module';
 import { NoteModule } from './note/note.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { RefreshTokenModule } from './refresh-token/refresh-token.module';
@@ -29,6 +30,7 @@ import { ReminderModule } from './workers/reminder/reminder.module';
     FollowupModule,
     CategoryModule,
     NoteModule,
+    AuditLogModule,
     UserModule,
     AuthModule,
     RefreshTokenModule,

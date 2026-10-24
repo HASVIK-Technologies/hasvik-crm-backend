@@ -15,6 +15,8 @@ import { FollowUpStatus } from '../mongo/enums';
 import { FollowUpKpiResponse } from './interface/kpis-response';
 import moment from 'moment-timezone';
 import { FollowUpResponse } from './interface/followup-response';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
 
 @Injectable()
 export class FollowUpService {
@@ -22,6 +24,7 @@ export class FollowUpService {
 
   constructor(
     private readonly mongo: MongoService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // CREATE FOLLOW-UP
@@ -112,6 +115,15 @@ export class FollowUpService {
     this.logger.log(
       `Follow-up created successfully. Follow-up ID: ${savedFollowUp._id}, Tenant ID: ${tenantId}`,
     );
+
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: AuditLogAction.CREATE,
+      entityType: AuditLogEntityType.FOLLOWUP,
+      entityId: savedFollowUp._id.toString(),
+      details: { newData: { ...followUpData, createdBy: userId } },
+    });
 
     return this.mapFollowUpResponse(
       savedFollowUp.toObject(),
@@ -599,6 +611,15 @@ export class FollowUpService {
       `Follow-up updated successfully. Follow-up ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: AuditLogAction.UPDATE,
+      entityType: AuditLogEntityType.FOLLOWUP,
+      entityId: id,
+      details: { newData: { ...dto, createdBy: userId }, existingData: followUp },
+    });
+
     return this.mapFollowUpResponse(followUp);
   }
 
@@ -796,6 +817,18 @@ export class FollowUpService {
     this.logger.log(
       `Follow-up status updated successfully. Follow-up ID: ${id}, Status: ${status}, Tenant ID: ${tenantId}`,
     );
+
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action:
+        status === FollowUpStatus.CANCELLED
+          ? AuditLogAction.DELETE
+          : AuditLogAction.STATUS_CHANGE,
+      entityType: AuditLogEntityType.FOLLOWUP,
+      entityId: id,
+      details: { status },
+    });
 
     return this.mapFollowUpResponse(followUp);
   }

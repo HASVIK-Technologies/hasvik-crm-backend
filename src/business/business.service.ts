@@ -17,6 +17,8 @@ import {BusinessKpiResponse} from './interface/kpis-response'
 import { BusinessStatus } from '../mongo/enums';
 import { FollowUpService } from '../followup/followup.service';
 import { FollowUpResponse } from 'src/followup/interface/followup-response';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
 
 @Injectable()
 export class BusinessService {
@@ -25,6 +27,7 @@ export class BusinessService {
   constructor(
     private readonly mongo: MongoService,
     private readonly followUpService: FollowUpService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // CREATE BUSINESS
@@ -82,6 +85,15 @@ export class BusinessService {
     this.logger.log(
       `Business created successfully. Business ID: ${createdBusiness._id}`,
     );
+
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: AuditLogAction.CREATE,
+      entityType: AuditLogEntityType.BUSINESS,
+      entityId: createdBusiness._id.toString(),
+      details: { newData: createdBusiness.toObject() },
+    });
 
     let followUp:FollowUpResponse | null = null;
     if (followUpData) {
@@ -350,6 +362,15 @@ export class BusinessService {
       `Business updated successfully. Business ID: ${id}, Tenant ID: ${tenantId}`,
     );
 
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: AuditLogAction.UPDATE,
+      entityType: AuditLogEntityType.BUSINESS,
+      entityId: id,
+      details: { changedFields: Object.keys(dto), newData: business },
+    });
+
     return this.mapBusinessResponse(business);
   }
 
@@ -405,6 +426,14 @@ export class BusinessService {
     this.logger.log(
       `Business deleted successfully. Business ID: ${id}`,
     );
+
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: AuditLogAction.DELETE,
+      entityType: AuditLogEntityType.BUSINESS,
+      entityId: id,
+    });
 
     return {
       message: 'Business deleted successfully.',

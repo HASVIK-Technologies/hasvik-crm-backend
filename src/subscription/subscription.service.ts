@@ -17,19 +17,29 @@ import { ISubscriptionPlanSnapshot } from 'src/mongo/schemas/subscription.schema
 import { SubscriptionStatusDto } from './dto/subscription-status.dto';
 import moment from 'moment';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
 
 
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
 
-  constructor(private readonly mongo: MongoService) {}
+  constructor(
+    private readonly mongo: MongoService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   /**
    * Create a subscription in PENDING status.
    * The plan snapshot is generated on the server.
    */
-  async create(tenantId: string, dto: CreateSubscriptionDto) {
+  async create(
+    user: AuthenticatedUser,
+    dto: CreateSubscriptionDto,
+    userId?: string,
+  ) {
+    const tenantId = user.tenantId;
     this.validateObjectId(tenantId, 'tenantId');
     this.validateObjectId(dto.planId, 'planId');
 
@@ -112,10 +122,23 @@ export class SubscriptionService {
         cancelledAt: null,
         cancellationReason: null,
       });
+      const subscriptionId = subscription._id?.toString();
+
+      if (!subscriptionId) {
+        throw new Error('Created subscription did not return an ID');
+      }
 
       this.logger.log( 
         `Subscription created: ${subscription._id}`,
       );
+
+      await this.auditLogService.createAuditLog({
+        tenantId,
+        userId,
+        action: AuditLogAction.CREATE,
+        entityType: AuditLogEntityType.SUBSCRIPTION,
+        entityId: subscriptionId,
+      });
 
       return subscription;
     } catch (error) {
@@ -277,6 +300,18 @@ export class SubscriptionService {
 
       this.logger.log(`Subscription status updated: ${id}`);
 
+      await this.auditLogService.createAuditLog({
+        tenantId: subscription.tenantId.toString(),
+        userId: user.userId,
+        action:
+          dto.status === SubscriptionStatus.CANCELLED
+            ? AuditLogAction.DELETE
+            : AuditLogAction.STATUS_CHANGE,
+        entityType: AuditLogEntityType.SUBSCRIPTION,
+        entityId: subscription._id.toString(),
+        details: { status: dto.status },
+      });
+
       return subscription;
     } catch (error) {
       if (this.isHttpException(error)) {
@@ -389,6 +424,15 @@ export class SubscriptionService {
       await subscription.save();
 
       this.logger.log(`Subscription renewed: ${id}`);
+
+      await this.auditLogService.createAuditLog({
+        tenantId: subscription.tenantId.toString(),
+        userId: user.userId,
+        action: AuditLogAction.UPDATE,
+        entityType: AuditLogEntityType.SUBSCRIPTION,
+        entityId: subscription._id.toString(),
+        details: { status: subscription.status, renewed: true },
+      });
 
       return subscription;
     } catch (error) {

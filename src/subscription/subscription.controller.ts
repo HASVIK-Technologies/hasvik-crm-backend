@@ -57,8 +57,7 @@ export class SubscriptionController {
     @Body() dto: CreateSubscriptionDto, 
     @Req() req: any
   ) {
-    const tenantId = req.user.tenantId;
-    return this.subscriptionService.create(tenantId, dto);
+    return this.subscriptionService.create(req.user, dto);
   }
 
   @Get()

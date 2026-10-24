@@ -1,0 +1,12 @@
+export enum AuditLogAction {
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  ASSIGN = 'ASSIGN',
+  NOTE = 'NOTE',
+  STATUS_CHANGE = 'STATUS_CHANGE',
+}
+
+

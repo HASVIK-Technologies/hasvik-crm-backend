@@ -5,3 +5,5 @@ export * from './business-status.enum';
 export * from './user-role.enum'
 export * from './subscription-status.enum'
 export * from './subscription-billing-cycle.enum';
+export * from './audit-log-action.enum';
+export * from './audit-log-entity-type.enum';

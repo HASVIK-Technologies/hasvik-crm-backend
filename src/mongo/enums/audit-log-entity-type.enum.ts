@@ -1,0 +1,8 @@
+export enum AuditLogEntityType {
+  TENANT = 'TENANT',
+  BUSINESS = 'BUSINESS',
+  FOLLOWUP = 'FOLLOWUP',
+  CATEGORY = 'CATEGORY',
+  SUBSCRIPTION = 'SUBSCRIPTION',
+  USER = 'USER',
+}

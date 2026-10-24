@@ -1,7 +1,7 @@
 import mongoose, { Collection,Document,Model, Schema } from 'mongoose';
 
-import { BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, SubscriptionPlanSchema, SubscriptionSchema, UserSchema } from './schemas';
-import type { Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note, User } from './interfaces';
+import { AuditLogSchema, BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, SubscriptionPlanSchema, SubscriptionSchema, UserSchema } from './schemas';
+import type { AuditLog, Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note, User } from './interfaces';
 import { RefreshTokenSchema } from './schemas/refresh-token.schema';
 import { RefreshToken } from './interfaces/refresh-token.interface';
 import { TenantSchema } from './schemas/tenant.schema';
@@ -14,6 +14,11 @@ type SchemaDefinition = {
 };
 
 const SCHEMAS: SchemaDefinition[] = [
+  {
+    key: 'auditLog',
+    name: 'AuditLog',
+    schema: AuditLogSchema,
+  },
   {
     key: 'user',
     name: 'User',
@@ -63,6 +68,7 @@ const SCHEMAS: SchemaDefinition[] = [
 
 export class MongoModels {
   // Define properties for each schema
+  readonly auditLog!: Model<AuditLog>;
   readonly business!: Model<Business>;
   readonly followUp!: Model<FollowUp>;
   readonly category!: Model<Category>;

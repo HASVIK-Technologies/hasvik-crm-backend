@@ -12,12 +12,17 @@ import { Category } from '../mongo/interfaces/category.interface';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryFilterDto } from './dto/category-filter.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
 
 @Injectable()
 export class CategoryService {
   private readonly logger = new Logger(CategoryService.name);
 
-  constructor(private readonly mongo: MongoService) {}
+  constructor(
+    private readonly mongo: MongoService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   /**
    * Create a new category
@@ -64,6 +69,15 @@ export class CategoryService {
     this.logger.log(
       `Category created successfully. Category ID: ${createdCategory._id}`,
     );
+
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: AuditLogAction.CREATE,
+      entityType: AuditLogEntityType.CATEGORY,
+      entityId: createdCategory._id.toString(),
+      details: { newData: createdCategory.toObject() },
+    });
 
     return createdCategory.toObject() as Category;
   }
@@ -315,6 +329,15 @@ export class CategoryService {
       `Category updated successfully. Category ID: ${id}`,
     );
 
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: AuditLogAction.UPDATE,
+      entityType: AuditLogEntityType.CATEGORY,
+      entityId: id,
+      details: { changedFields: Object.keys(dto), newData: updatedCategory },
+    });
+
     return updatedCategory as Category;
   }
 
@@ -372,6 +395,17 @@ export class CategoryService {
     this.logger.log(
       `Category status updated successfully. Category ID: ${id}, Active: ${isActive}, Tenant ID: ${tenantId}`,
     );
+
+    await this.auditLogService.createAuditLog({
+      tenantId,
+      userId,
+      action: isActive
+        ? AuditLogAction.STATUS_CHANGE
+        : AuditLogAction.DELETE,
+      entityType: AuditLogEntityType.CATEGORY,
+      entityId: id,
+      details: { isActive },
+    });
 
     return category as Category;
   }

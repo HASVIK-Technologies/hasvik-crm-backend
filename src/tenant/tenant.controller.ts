@@ -75,8 +75,9 @@ export class TenantController {
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateTenantStatusDto,
+    @Req() req: any,
   ) {
-    return this.tenantsService.updateStatus(id, dto.isActive);
+    return this.tenantsService.updateStatus(id, dto.isActive, req.user.userId);
   }
 
   @Patch(':id')
@@ -87,7 +88,8 @@ export class TenantController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateTenantDto,
+    @Req() req: any,
   ) {
-    return this.tenantsService.update(id, dto);
+    return this.tenantsService.update(id, dto, req.user.userId);
   }
 }
