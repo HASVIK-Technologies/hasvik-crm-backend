@@ -114,7 +114,7 @@ export class SubscriptionService {
         tenantId: this.mongo.toObjectId(tenantId),
         planId: this.mongo.toObjectId(dto.planId),
         planSnapshot,
-        status: SubscriptionStatus.PENDING,
+        status: plan.code === 'FREE' ? SubscriptionStatus.ACTIVE : SubscriptionStatus.PENDING,
         startDate,
         endDate,
         autoRenew: dto.autoRenew ?? false,
