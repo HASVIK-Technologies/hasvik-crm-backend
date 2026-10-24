@@ -117,7 +117,7 @@ export const SubscriptionPlanSchema =
     },
     {
       timestamps: true,
-      collection: 'subscriptionPlans',
+      collection: 'subscription_plans',
       versionKey: false,
     },
   );
