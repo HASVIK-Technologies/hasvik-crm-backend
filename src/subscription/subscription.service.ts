@@ -175,7 +175,8 @@ export class SubscriptionService {
     }
 
     try {
-      return await this.mongo.models.subscription
+      const [data, total] = await Promise.all([
+        this.mongo.models.subscription
         .find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -183,7 +184,14 @@ export class SubscriptionService {
         .populate('tenantId')
         .populate('planId')
         .lean()
-        .exec();
+        .exec(),
+        
+        this.mongo.models.subscription
+        .countDocuments(filter),
+      ]);
+      
+      return { data, total };
+
     } catch (error) {
       this.logger.error(
         'Failed to retrieve subscriptions',

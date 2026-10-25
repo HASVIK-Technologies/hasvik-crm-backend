@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { isValidObjectId, Model } from 'mongoose';
@@ -19,6 +20,8 @@ import { GetTenantFilterDto } from './dto/get-tenant-filter.dto';
 
 @Injectable()
 export class TenantService {
+  private readonly logger = new Logger(TenantService.name);
+
   // to-do
   constructor(
     private readonly mongo: MongoService,
@@ -87,15 +90,30 @@ export class TenantService {
     if (isActive !== undefined) {
       filter.isActive = isActive;
     }
+    try{
+      const [data, total] = await Promise.all([
+        this.mongo.models.tenant
+        .find(filter)
+        .select('-__v')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+        
+        this.mongo.models.tenant
+        .countDocuments(filter),
+      ]);
+      
+      return { data, total };
+    } catch (error) {
+      this.logger.error(
+        'Failed to retrieve tenants',
+        error instanceof Error ? error.stack : String(error),
+      );
 
-    return this.mongo.models.tenant
-      .find(filter)
-      .select('-__v')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()
-      .exec();
+      throw error;
+    }
   }
 
   async findOne(id: string) {
