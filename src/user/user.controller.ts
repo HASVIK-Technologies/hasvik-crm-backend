@@ -20,7 +20,7 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserFilterDto } from './dto/get-user-filter.dto';
+import { UserFilterDto, UserKPIsDto } from './dto/get-user-filter.dto';
 import { UserAutocompleteDto } from './dto/user-autocomplete.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -82,6 +82,19 @@ export class UserController {
   //@Permissions(Permission.USER_READ)
   async findAll(@Query() query: UserFilterDto, @Req() req: any) {
     return await this.userService.findAll(req.user, query);
+  }
+
+  @Get('kpis')
+  @ApiOperation({
+    summary: 'Get user KPIs',
+    description: 'Returns total, active, and inactive user counts.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User KPIs retrieved successfully.',
+  })
+  async getKpis(@Query() query: UserKPIsDto, @Req() req: any) {
+    return await this.userService.getKpis(req.user, query);
   }
 
   @Get(':id')

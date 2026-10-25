@@ -16,7 +16,7 @@ import { UIUserRole, UserRole } from 'src/mongo/enums';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
-import { GetTenantFilterDto } from './dto/get-tenant-filter.dto';
+import { GetTenantFilterDto, TenantKPIsDto } from './dto/get-tenant-filter.dto';
 
 @Injectable()
 export class TenantService {
@@ -114,6 +114,55 @@ export class TenantService {
 
       throw error;
     }
+  }
+
+  async getKpis(
+    user: AuthenticatedUser,
+    query: TenantKPIsDto,
+  ): Promise<{ total: number; active: number; inactive: number }> {
+
+    const filter: Record<string, unknown> = { };
+
+    if (user.role !== UserRole.SUPERADMIN) {
+      // Super admin can see all tenants
+      filter._id = this.mongo.toObjectId(user.tenantId);
+    }
+
+    if (query.isActive !== undefined) {
+      filter.isActive = query.isActive;
+    }
+
+    const [kpis] = await this.mongo.models.tenant
+      .aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            active: {
+              $sum: {
+                $cond: [{ $eq: ['$isActive', true] }, 1, 0],
+              },
+            },
+            inactive: {
+              $sum: {
+                $cond: [{ $eq: ['$isActive', false] }, 1, 0],
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            total: 1,
+            active: 1,
+            inactive: 1,
+          },
+        },
+      ])
+      .exec();
+
+    return kpis ?? { total: 0, active: 0, inactive: 0 };
   }
 
   async findOne(id: string) {

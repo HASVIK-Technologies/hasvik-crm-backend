@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiPropertyOptional, OmitType } from "@nestjs/swagger";
 import { IsNumberString, IsOptional } from "class-validator";
 
 export class GetTenantFilterDto {
@@ -28,3 +28,8 @@ export class GetTenantFilterDto {
     @IsNumberString()
     limit?: string;
 }
+
+export class TenantKPIsDto extends OmitType(
+  GetTenantFilterDto,
+  ['page', 'limit'] as const,
+) {}

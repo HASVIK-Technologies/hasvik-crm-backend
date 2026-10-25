@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -104,3 +104,9 @@ export class UserFilterDto {
   @IsIn(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc' = 'asc';
 }
+
+
+export class UserKPIsDto extends OmitType(
+  UserFilterDto,
+  ['page', 'limit', 'sortBy', 'sortOrder'] as const,
+) {}
