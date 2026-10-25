@@ -19,6 +19,7 @@ import moment from 'moment';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { GetSubscriptionFilterDto } from './dto/get-subscription-filter.dto';
 
 
 @Injectable()
@@ -158,18 +159,27 @@ export class SubscriptionService {
   /**
    * Retrieve subscriptions.
    */
-  async findAll(user: AuthenticatedUser) {
+  async findAll(user: AuthenticatedUser, query: GetSubscriptionFilterDto) {
+    const page = query.page !== undefined ? Number(query.page) : 1;
+    const limit = query.limit !== undefined ? Number(query.limit) : 10;
+    const skip = (page - 1) * limit;
     const filter: Record<string, unknown> = { };
 
     if (user.role !== UserRole.SUPERADMIN) {
       // Super admin can see all tenants
       filter.tenantId = this.mongo.toObjectId(user.tenantId);
     }
+
+    if (query.status) {
+      filter.status = query.status;
+    }
+
     try {
-      
       return await this.mongo.models.subscription
         .find(filter)
         .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
         .populate('tenantId')
         .populate('planId')
         .lean()

@@ -10,6 +10,7 @@ import {
   Post,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,6 +29,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../mongo/enums/user-role.enum';
+import { GetSubscriptionFilterDto } from './dto/get-subscription-filter.dto';
 
 @ApiTags('Subscriptions')
 @ApiBearerAuth()
@@ -67,8 +69,8 @@ export class SubscriptionController {
     status: HttpStatus.OK,
     description: 'Subscriptions retrieved successfully',
   })
-  findAll( @Req() req: any ) {
-    return this.subscriptionService.findAll(req.user);
+  findAll( @Query() query: GetSubscriptionFilterDto, @Req() req: any ) {
+    return this.subscriptionService.findAll(req.user, query);
   }
 
   @Get(':id')
