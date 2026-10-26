@@ -139,6 +139,7 @@ export class SubscriptionService {
         action: AuditLogAction.CREATE,
         entityType: AuditLogEntityType.SUBSCRIPTION,
         entityId: subscriptionId,
+        message: 'Subscription created',
       });
 
       return subscription;
@@ -327,6 +328,7 @@ export class SubscriptionService {
             : AuditLogAction.STATUS_CHANGE,
         entityType: AuditLogEntityType.SUBSCRIPTION,
         entityId: subscription._id.toString(),
+        message: `Subscription status changed to ${dto.status.toLowerCase()}`,
         details: { status: dto.status },
       });
 
@@ -449,6 +451,7 @@ export class SubscriptionService {
         action: AuditLogAction.UPDATE,
         entityType: AuditLogEntityType.SUBSCRIPTION,
         entityId: subscription._id.toString(),
+        message: 'Subscription renewed',
         details: { status: subscription.status, renewed: true },
       });
 

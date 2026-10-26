@@ -76,6 +76,7 @@ export class CategoryService {
       action: AuditLogAction.CREATE,
       entityType: AuditLogEntityType.CATEGORY,
       entityId: createdCategory._id.toString(),
+      message: 'Category created',
       details: { newData: createdCategory.toObject() },
     });
 
@@ -335,7 +336,8 @@ export class CategoryService {
       action: AuditLogAction.UPDATE,
       entityType: AuditLogEntityType.CATEGORY,
       entityId: id,
-      details: { changedFields: Object.keys(dto), newData: updatedCategory },
+      message: 'Category updated',
+      details: { changedFields: Object.keys(dto) },
     });
 
     return updatedCategory as Category;
@@ -404,6 +406,7 @@ export class CategoryService {
         : AuditLogAction.DELETE,
       entityType: AuditLogEntityType.CATEGORY,
       entityId: id,
+      message: `Category ${isActive ? 'activated' : 'deactivated'}`,
       details: { isActive },
     });
 

@@ -53,7 +53,8 @@ export class TenantService {
         action: AuditLogAction.CREATE,
         entityType: AuditLogEntityType.TENANT,
         entityId: tenant._id.toString(),
-        details: { newData: { ...tenant } },
+        message: 'Tenant created',
+        details: { newData: tenant.toObject() },
       });
 
       if(fullName && password) {
@@ -208,7 +209,8 @@ export class TenantService {
         action: AuditLogAction.UPDATE,
         entityType: AuditLogEntityType.TENANT,
         entityId: id,
-        details: { newData: dto, existingData: tenant },
+        message: 'Tenant updated',
+        details: { changedFields: Object.keys(dto) },
       });
 
       return tenant;
@@ -245,6 +247,7 @@ export class TenantService {
         : AuditLogAction.DELETE,
       entityType: AuditLogEntityType.TENANT,
       entityId: id,
+      message: `Tenant ${isActive ? 'activated' : 'deactivated'}`,
       details: { isActive },
     });
 

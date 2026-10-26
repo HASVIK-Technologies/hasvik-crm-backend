@@ -22,6 +22,7 @@ export interface CreateAuditLogRequest {
   action: AuditLogAction;
   entityType: AuditLogEntityType;
   entityId?: string;
+  message?: string;
   details?: Record<string, unknown>;
 }
 
@@ -66,6 +67,7 @@ export class AuditLogService {
       entityId: input.entityId
         ? this.mongo.toObjectId(input.entityId)
         : undefined,
+      message: input.message,
       details: input.details,
     });
 
