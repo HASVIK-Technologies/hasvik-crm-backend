@@ -19,6 +19,7 @@ import moment from 'moment';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { GetSubscriptionFilterDto } from './dto/get-subscription-filter.dto';
 
 
 @Injectable()
@@ -138,6 +139,7 @@ export class SubscriptionService {
         action: AuditLogAction.CREATE,
         entityType: AuditLogEntityType.SUBSCRIPTION,
         entityId: subscriptionId,
+        message: 'Subscription created',
       });
 
       return subscription;
@@ -158,22 +160,39 @@ export class SubscriptionService {
   /**
    * Retrieve subscriptions.
    */
-  async findAll(user: AuthenticatedUser) {
+  async findAll(user: AuthenticatedUser, query: GetSubscriptionFilterDto) {
+    const page = query.page !== undefined ? Number(query.page) : 1;
+    const limit = query.limit !== undefined ? Number(query.limit) : 10;
+    const skip = (page - 1) * limit;
     const filter: Record<string, unknown> = { };
 
     if (user.role !== UserRole.SUPERADMIN) {
       // Super admin can see all tenants
       filter.tenantId = this.mongo.toObjectId(user.tenantId);
     }
+
+    if (query.status) {
+      filter.status = query.status;
+    }
+
     try {
-      
-      return await this.mongo.models.subscription
+      const [data, total] = await Promise.all([
+        this.mongo.models.subscription
         .find(filter)
         .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
         .populate('tenantId')
         .populate('planId')
         .lean()
-        .exec();
+        .exec(),
+        
+        this.mongo.models.subscription
+        .countDocuments(filter),
+      ]);
+      
+      return { data, total };
+
     } catch (error) {
       this.logger.error(
         'Failed to retrieve subscriptions',
@@ -309,6 +328,7 @@ export class SubscriptionService {
             : AuditLogAction.STATUS_CHANGE,
         entityType: AuditLogEntityType.SUBSCRIPTION,
         entityId: subscription._id.toString(),
+        message: `Subscription status changed to ${dto.status.toLowerCase()}`,
         details: { status: dto.status },
       });
 
@@ -431,6 +451,7 @@ export class SubscriptionService {
         action: AuditLogAction.UPDATE,
         entityType: AuditLogEntityType.SUBSCRIPTION,
         entityId: subscription._id.toString(),
+        message: 'Subscription renewed',
         details: { status: subscription.status, renewed: true },
       });
 

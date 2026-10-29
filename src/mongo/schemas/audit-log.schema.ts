@@ -31,9 +31,13 @@ export const AuditLogSchema: Schema<AuditLog> = new Schema<AuditLog>(
       type: Schema.Types.ObjectId,
       index: true,
     },
+    message: {
+      type: String,
+      trim: true,
+    },
     details: {
       type: Schema.Types.Mixed,
-    }
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -66,4 +67,18 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(UIUserRole)
   role?: UIUserRole;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Filter users by deleted status',
+  })
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

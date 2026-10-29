@@ -56,6 +56,7 @@ describe('AuditLogService', () => {
         userId,
         action: 'UPDATE',
         entityType: 'BUSINESS',
+        message: 'Business details updated',
         details: { name: { before: 'Old', after: 'New' } },
       }),
     ).resolves.toBe(created);
@@ -66,6 +67,7 @@ describe('AuditLogService', () => {
         userId: new Types.ObjectId(userId),
         action: 'UPDATE',
         entityType: 'BUSINESS',
+        message: 'Business details updated',
       }),
     );
   });

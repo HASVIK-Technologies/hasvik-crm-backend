@@ -92,6 +92,7 @@ export class BusinessService {
       action: AuditLogAction.CREATE,
       entityType: AuditLogEntityType.BUSINESS,
       entityId: createdBusiness._id.toString(),
+      message: 'Business created',
       details: { newData: createdBusiness.toObject() },
     });
 
@@ -368,7 +369,8 @@ export class BusinessService {
       action: AuditLogAction.UPDATE,
       entityType: AuditLogEntityType.BUSINESS,
       entityId: id,
-      details: { changedFields: Object.keys(dto), newData: business },
+      message: 'Business updated',
+      details: { changedFields: Object.keys(dto) },
     });
 
     return this.mapBusinessResponse(business);
@@ -433,6 +435,7 @@ export class BusinessService {
       action: AuditLogAction.DELETE,
       entityType: AuditLogEntityType.BUSINESS,
       entityId: id,
+      message: 'Business deleted',
     });
 
     return {

@@ -9,6 +9,7 @@ export interface AuditLog {
   action: AuditLogAction;
   entityType: AuditLogEntityType;
   entityId?: Types.ObjectId;
+  message?: string;
   details?: Record<string, unknown>;
   createdAt: Date;
 }

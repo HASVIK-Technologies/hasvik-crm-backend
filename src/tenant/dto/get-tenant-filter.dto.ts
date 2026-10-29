@@ -1,13 +1,21 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsNumberString, IsOptional } from "class-validator";
+import { ApiPropertyOptional, OmitType } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
+import { IsBoolean, IsNumberString, IsOptional } from "class-validator";
 
 export class GetTenantFilterDto {
 
     @ApiPropertyOptional({
-    example: true,
-    default: true,
+      example: false,
+      description: 'Filter users by deleted status',
+    })
+    @Transform(({ value }) => {
+      if (typeof value === 'boolean') return value;
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      return value;
     })
     @IsOptional()
+    @IsBoolean()
     isActive?: boolean;
 
     @ApiPropertyOptional({
@@ -28,3 +36,8 @@ export class GetTenantFilterDto {
     @IsNumberString()
     limit?: string;
 }
+
+export class TenantKPIsDto extends OmitType(
+  GetTenantFilterDto,
+  ['page', 'limit'] as const,
+) {}

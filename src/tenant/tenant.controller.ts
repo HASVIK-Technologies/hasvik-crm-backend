@@ -28,7 +28,7 @@ import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
 import { UserRole } from '../mongo/enums';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { GetTenantFilterDto } from './dto/get-tenant-filter.dto';
+import { GetTenantFilterDto, TenantKPIsDto } from './dto/get-tenant-filter.dto';
 
 @ApiTags('Tenants')
 @Controller('tenants')
@@ -53,6 +53,18 @@ export class TenantController {
     @Query() query: GetTenantFilterDto,
   ) {
     return this.tenantsService.findAll(req.user, query);
+  }
+
+  @Get('kpis')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Get tenant KPIs',
+    description: 'Returns total, active, and inactive tenant counts.',
+  })
+  getKpis(@Req() req: any, @Query() query: TenantKPIsDto,) {
+    return this.tenantsService.getKpis(req.user, query);
   }
 
   @Get(':id')

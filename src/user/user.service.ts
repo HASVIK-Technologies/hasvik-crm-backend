@@ -12,10 +12,10 @@ import { User, UserResponse } from '../mongo/interfaces';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserFilterDto } from './dto/get-user-filter.dto';
-import { UserWithTenantInfo } from 'src/auth/interfaces/user-with-tenant-info.interface';
-import { AuthenticatedUser } from 'src/auth/interfaces/authenticated-user.interface';
-import { UserRole } from 'src/mongo/enums/user-role.enum';
+import { UserFilterDto, UserKPIsDto } from './dto/get-user-filter.dto';
+import { UserWithTenantInfo } from '../auth/interfaces/user-with-tenant-info.interface';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { UserRole } from '../mongo/enums/user-role.enum';
 
 @Injectable()
 export class UserService {
@@ -117,6 +117,47 @@ export class UserService {
     return user as UserResponse;
   }
 
+  async getKpis(
+    user: AuthenticatedUser,
+    query: UserKPIsDto,
+  ): Promise<{ total: number; active: number; inactive: number }> {
+    const filter: Record<string, any> = this.getUserFilter(user, query);
+
+    const [kpis] = await this.mongo.models.user
+      .aggregate([
+        {
+          $match: filter,
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            active: {
+              $sum: {
+                $cond: [{ $eq: ['$isActive', true] }, 1, 0],
+              },
+            },
+            inactive: {
+              $sum: {
+                $cond: [{ $eq: ['$isActive', false] }, 1, 0],
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            total: 1,
+            active: 1,
+            inactive: 1,
+          },
+        },
+      ])
+      .exec();
+
+    return kpis ?? { total: 0, active: 0, inactive: 0 };
+  }
+
   // GET ALL USERS
   async findAll(
     user: AuthenticatedUser,
@@ -140,40 +181,7 @@ export class UserService {
       `Fetching users. Page: ${page}, Limit: ${limit}, Search: ${search || 'none'}`,
     );
 
-    const filter: Record<string, any> = {};
-    // if user is super admin, list all tenant
-    if (user.role !== UserRole.SUPERADMIN ) {
-      filter.tenantId = this.mongo.toObjectId(user.tenantId);
-    }
-    // if tenantId is coming in query filter
-    if(tenantId){
-      filter.tenantId = this.mongo.toObjectId(tenantId);
-    }
-
-    if (search) {
-      filter.$or = [
-        {
-          fullName: {
-            $regex: search,
-            $options: 'i',
-          },
-        },
-        {
-          email: {
-            $regex: search,
-            $options: 'i',
-          },
-        },
-      ];
-    }
-
-    if (role) {
-      filter.role = role;
-    }
-
-    if (isActive !== undefined) {
-      filter.isActive = isActive;
-    }
+    const filter: Record<string, any> = this.getUserFilter(user, query);
 
     const skip = (page - 1) * limit;
 
@@ -211,6 +219,53 @@ export class UserService {
       data: users as UserResponse[],
       total,
     };
+  }
+
+  getUserFilter(user: AuthenticatedUser, query: UserFilterDto | UserKPIsDto): Record<string, any> {
+    const {
+      search,
+      tenantId,
+      role,
+      isActive,
+    } = query;
+    
+    const filter: Record<string, any> = {};
+
+    // if user is super admin, list all tenant
+    if (user.role !== UserRole.SUPERADMIN ) {
+      filter.tenantId = this.mongo.toObjectId(user.tenantId);
+    }
+    // if tenantId is coming in query filter
+    if(tenantId){
+      filter.tenantId = this.mongo.toObjectId(tenantId);
+    }
+
+    if (search) {
+      filter.$or = [
+        {
+          fullName: {
+            $regex: search,
+            $options: 'i',
+          },
+        },
+        {
+          email: {
+            $regex: search,
+            $options: 'i',
+          },
+        },
+      ];
+    }
+
+    if (role) {
+      filter.role = role;
+    }
+
+    if (isActive !== undefined) {
+      filter.isActive = isActive;
+    }
+
+    return filter;
   }
 
   // UPDATE USER

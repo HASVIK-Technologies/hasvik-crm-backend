@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { isValidObjectId, Model } from 'mongoose';
@@ -15,10 +16,12 @@ import { UIUserRole, UserRole } from 'src/mongo/enums';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
-import { GetTenantFilterDto } from './dto/get-tenant-filter.dto';
+import { GetTenantFilterDto, TenantKPIsDto } from './dto/get-tenant-filter.dto';
 
 @Injectable()
 export class TenantService {
+  private readonly logger = new Logger(TenantService.name);
+
   // to-do
   constructor(
     private readonly mongo: MongoService,
@@ -50,7 +53,8 @@ export class TenantService {
         action: AuditLogAction.CREATE,
         entityType: AuditLogEntityType.TENANT,
         entityId: tenant._id.toString(),
-        details: { newData: { ...tenant } },
+        message: 'Tenant created',
+        details: { newData: tenant.toObject() },
       });
 
       if(fullName && password) {
@@ -87,15 +91,79 @@ export class TenantService {
     if (isActive !== undefined) {
       filter.isActive = isActive;
     }
+    try{
+      const [data, total] = await Promise.all([
+        this.mongo.models.tenant
+        .find(filter)
+        .select('-__v')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+        
+        this.mongo.models.tenant
+        .countDocuments(filter),
+      ]);
+      
+      return { data, total };
+    } catch (error) {
+      this.logger.error(
+        'Failed to retrieve tenants',
+        error instanceof Error ? error.stack : String(error),
+      );
 
-    return this.mongo.models.tenant
-      .find(filter)
-      .select('-__v')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()
+      throw error;
+    }
+  }
+
+  async getKpis(
+    user: AuthenticatedUser,
+    query: TenantKPIsDto,
+  ): Promise<{ total: number; active: number; inactive: number }> {
+
+    const filter: Record<string, unknown> = { };
+
+    if (user.role !== UserRole.SUPERADMIN) {
+      // Super admin can see all tenants
+      filter._id = this.mongo.toObjectId(user.tenantId);
+    }
+
+    if (query.isActive !== undefined) {
+      filter.isActive = query.isActive;
+    }
+
+    const [kpis] = await this.mongo.models.tenant
+      .aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            active: {
+              $sum: {
+                $cond: [{ $eq: ['$isActive', true] }, 1, 0],
+              },
+            },
+            inactive: {
+              $sum: {
+                $cond: [{ $eq: ['$isActive', false] }, 1, 0],
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            total: 1,
+            active: 1,
+            inactive: 1,
+          },
+        },
+      ])
       .exec();
+
+    return kpis ?? { total: 0, active: 0, inactive: 0 };
   }
 
   async findOne(id: string) {
@@ -141,7 +209,8 @@ export class TenantService {
         action: AuditLogAction.UPDATE,
         entityType: AuditLogEntityType.TENANT,
         entityId: id,
-        details: { newData: dto, existingData: tenant },
+        message: 'Tenant updated',
+        details: { changedFields: Object.keys(dto) },
       });
 
       return tenant;
@@ -178,6 +247,7 @@ export class TenantService {
         : AuditLogAction.DELETE,
       entityType: AuditLogEntityType.TENANT,
       entityId: id,
+      message: `Tenant ${isActive ? 'activated' : 'deactivated'}`,
       details: { isActive },
     });
 

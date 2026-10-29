@@ -122,6 +122,7 @@ export class FollowUpService {
       action: AuditLogAction.CREATE,
       entityType: AuditLogEntityType.FOLLOWUP,
       entityId: savedFollowUp._id.toString(),
+      message: 'Follow-up created',
       details: { newData: { ...followUpData, createdBy: userId } },
     });
 
@@ -617,7 +618,8 @@ export class FollowUpService {
       action: AuditLogAction.UPDATE,
       entityType: AuditLogEntityType.FOLLOWUP,
       entityId: id,
-      details: { newData: { ...dto, createdBy: userId }, existingData: followUp },
+      message: 'Follow-up updated',
+      details: { changedFields: Object.keys(dto) },
     });
 
     return this.mapFollowUpResponse(followUp);
@@ -827,6 +829,7 @@ export class FollowUpService {
           : AuditLogAction.STATUS_CHANGE,
       entityType: AuditLogEntityType.FOLLOWUP,
       entityId: id,
+      message: `Follow-up status changed to ${status.toLowerCase()}`,
       details: { status },
     });
 
