@@ -20,6 +20,12 @@ export const UserSchema = new Schema<User>(
       index: true,
     },
 
+    phoneNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     fullName: {
       type: String,
       required: true,

@@ -6,6 +6,7 @@ export interface User {
 
   tenantId: Types.ObjectId;
   email: string;
+  phoneNumber: string;
   fullName: string;
   password: string;
 

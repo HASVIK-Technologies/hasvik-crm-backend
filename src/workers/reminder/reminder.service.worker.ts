@@ -1,17 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import moment from 'moment-timezone';
-import { Business, FollowUp } from '../../mongo/interfaces';
-import { FollowUpStatus } from '../../mongo/enums';
+import { Business, ContactNumber, FollowUp } from '../../mongo/interfaces';
+import {
+  FollowUpStatus,
+  NotificationCategory,
+  NotificationChannel,
+} from '../../mongo/enums';
 import { MongoService } from '../../mongo/mongo.service';
-import { SmsService } from '../../common/sms/sms.service';
+import { NotificationService } from '../../notification/notification.service';
+
+const DEFAULT_REMINDER_TEMPLATE_CODE = 'BUSINESS_FOLLOWUP_WITH_IMAGE';
+const DEFAULT_REMINDER_HEADER_IMAGE_URL =
+  'https://hasvik.s3.ap-south-1.amazonaws.com/crm/logo/hasvik-reminder.jpeg';
+const DEFAULT_REMINDER_BUSINESS_NAME = 'HASVIK Tech';
 
 type ReminderBusiness = Pick<
   Business,
   'name' | 'phoneNumbers' | 'whatsappNumbers'
 >;
 
-type FollowUpWithBusiness = Omit<FollowUp, 'businessId'> & {
+type FollowUpWithBusiness = Omit<FollowUp, 'businessId' | 'assignedTo'> & {
   businessId: ReminderBusiness | null;
+  assignedTo: { fullName: string; phoneNumber?: string } | null;
 };
 
 @Injectable()
@@ -21,7 +32,8 @@ export class ReminderServiceWorker {
 
   constructor(
     private readonly mongo: MongoService,
-    private readonly smsService: SmsService,
+    private readonly notificationService: NotificationService,
+    private readonly configService: ConfigService,
   ) {}
 
   async checkReminders(): Promise<void> {
@@ -58,6 +70,12 @@ export class ReminderServiceWorker {
           'businessId',
           'name phoneNumbers whatsappNumbers',
         )
+        .populate<{
+          assignedTo: { fullName: string; phoneNumber?: string } | null;
+        }>(
+          'assignedTo',
+          'fullName phoneNumber',
+        )
         .exec()) as FollowUpWithBusiness[];
 
       for (const followUp of followUps) {
@@ -78,27 +96,59 @@ export class ReminderServiceWorker {
       return;
     }
 
-    const contacts = [
-      ...(business.whatsappNumbers ?? []),
-      ...(business.phoneNumbers ?? []),
-    ];
-    const contact =
-      contacts.find((candidate) => candidate.isPrimary) ?? contacts[0];
-
-    if (!contact) {
+    const assignedTo = followUp.assignedTo;
+    if (!assignedTo?.phoneNumber) {
       this.logger.warn(
-        `Skipping reminder for follow-up ${followUpId}: business has no contact number`,
+        `Skipping reminder for follow-up ${followUpId}: assigned user has no phone number`,
       );
       return;
     }
 
-    const message = `Reminder: ${followUp.type.toLowerCase()} follow-up for ${business.name} is scheduled at ${moment.utc(followUp.scheduledAt).toISOString()}.`;
+    const businessContacts: ContactNumber[] = [
+      ...(business.whatsappNumbers ?? []),
+      ...(business.phoneNumbers ?? []),
+    ];
+    const primaryContact =
+      businessContacts.find((contact) => contact.isPrimary) ??
+      businessContacts[0];
 
     try {
-      // Call service to send message
-      //await this.smsService.sendSms(contact.number, message);
+      await this.notificationService.sendNotification({
+        channel: NotificationChannel.WHATSAPP,
+        category: NotificationCategory.REMINDER,
+        recipient: assignedTo.phoneNumber,
+        templateCode:
+          this.configService.get<string>('REMINDER_WHATSAPP_TEMPLATE_CODE') ||
+          DEFAULT_REMINDER_TEMPLATE_CODE,
+        variables: {
+          headerImageUrl:
+            this.configService.get<string>(
+              'REMINDER_WHATSAPP_HEADER_IMAGE_URL',
+            ) || DEFAULT_REMINDER_HEADER_IMAGE_URL,
+          //customerName: primaryContact?.name || business.name,
+          customerName: assignedTo.fullName || 'Admin',
+          businessName:
+            this.configService.get<string>('REMINDER_WHATSAPP_BUSINESS_NAME') ||
+            DEFAULT_REMINDER_BUSINESS_NAME,
+          businessDisplayName: business.name,
+          contactPerson: primaryContact?.name || business.name,
+          phoneNumber: primaryContact?.number || assignedTo.phoneNumber,
+          followUpDate: moment.utc(followUp.scheduledAt).format('DD MMM YYYY'),
+          followUpTime: moment.utc(followUp.scheduledAt).format('hh:mm A'),
+          purpose: "Followup Reminder",
+          assignedTo: assignedTo.fullName || 'Your team',
+        },
+        idempotencyKey: `follow-up-reminder:${followUpId}:${followUp.scheduledAt.getTime()}`,
+      });
       this.logger.log(`Reminder sent for follow-up ${followUpId}`);
     } catch (error) {
+      if (error instanceof ConflictException) {
+        this.logger.log(
+          `Skipping duplicate reminder for follow-up ${followUpId}`,
+        );
+        return;
+      }
+
       this.logger.error(
         `Failed to send reminder for follow-up ${followUpId}`,
         error instanceof Error ? error.stack : String(error),

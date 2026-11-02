@@ -62,6 +62,7 @@ export class TenantService {
           tenant._id.toString(),
           {
             email: contactEmail || '',
+            phoneNumber: contactPhone,
             fullName,
             password,
             role: UIUserRole.ADMIN,

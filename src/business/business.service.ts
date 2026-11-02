@@ -4,6 +4,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
+import { isDeepStrictEqual } from 'node:util';
 import { isObjectIdOrHexString } from 'mongoose';
 
 import { MongoService } from '../mongo/mongo.service';
@@ -19,6 +20,11 @@ import { FollowUpService } from '../followup/followup.service';
 import { FollowUpResponse } from 'src/followup/interface/followup-response';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+
+function normalizeForComparison(value: unknown): unknown {
+  const serialized = JSON.stringify(value);
+  return serialized === undefined ? value : JSON.parse(serialized);
+}
 
 @Injectable()
 export class BusinessService {
@@ -328,6 +334,34 @@ export class BusinessService {
       );
     }
 
+    const existingBusiness = await this.mongo.models.business
+      .findOne({
+        _id: this.mongo.toObjectId(id),
+        tenantId: this.mongo.toObjectId(tenantId),
+      })
+      .lean()
+      .exec();
+
+    if (!existingBusiness) {
+      this.logger.warn(
+        `Business not found while updating. Business ID: ${id}, Tenant ID: ${tenantId}`,
+      );
+
+      throw new NotFoundException('Business not found.');
+    }
+
+    const changedFields = Object.keys(dto).filter((field) => {
+      const requestedValue = Reflect.get(dto, field);
+      if (requestedValue === undefined) {
+        return false;
+      }
+
+      return !isDeepStrictEqual(
+        normalizeForComparison(requestedValue),
+        normalizeForComparison(Reflect.get(existingBusiness, field)),
+      );
+    });
+
     const business =
       await this.mongo.models.business
         .findOneAndUpdate(
@@ -370,7 +404,7 @@ export class BusinessService {
       entityType: AuditLogEntityType.BUSINESS,
       entityId: id,
       message: 'Business updated',
-      details: { changedFields: Object.keys(dto) },
+      details: { changedFields },
     });
 
     return this.mapBusinessResponse(business);

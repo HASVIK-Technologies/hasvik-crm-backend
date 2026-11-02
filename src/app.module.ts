@@ -16,6 +16,7 @@ import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.mo
 import { TenantModule } from './tenant/tenant.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ReminderModule } from './workers/reminder/reminder.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ReminderModule } from './workers/reminder/reminder.module';
     SubscriptionPlanModule,
     TenantModule,
     ReminderModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

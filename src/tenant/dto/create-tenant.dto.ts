@@ -29,13 +29,17 @@ export class CreateTenantDto {
   @IsEmail()
   contactEmail?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: '+1234567890',
-    description: 'Tenant contact phone number',
+    description: 'Tenant contact phone number and initial admin user phone number',
   })
-  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
-  contactPhone?: string;
+  @IsNotEmpty()
+  @MaxLength(20)
+  contactPhone!: string;
 
   @ApiProperty({
     example: 'hasvik',
