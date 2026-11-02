@@ -6,7 +6,7 @@ import { ReminderServiceWorker } from './reminder.service.worker';
 export class ReminderControllerWorker {
   constructor(private readonly reminderService: ReminderServiceWorker) {}
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
   async checkReminders(): Promise<void> {
     console.log("Checking reminders...");
     await this.reminderService.checkReminders();
