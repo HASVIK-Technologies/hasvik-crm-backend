@@ -34,6 +34,56 @@ $ npm install
 Set `SUPERADMIN_EMAIL` in your `.env` file to the email address assigned to the
 super-admin account. See [.env.example](./.env.example) for the variable format.
 
+## WhatsApp follow-up reminders
+
+The reminder worker sends WhatsApp template messages through the notification
+provider. For MSG91, configure `MSG91_AUTH_KEY` and
+`MSG91_WHATSAPP_INTEGRATED_NUMBER`. Optionally set
+`NOTIFICATION_WHATSAPP_PROVIDER=msg91`,
+`REMINDER_WHATSAPP_TEMPLATE_CODE=BUSINESS_FOLLOWUP_WITH_IMAGE`,
+`REMINDER_WHATSAPP_HEADER_IMAGE_URL`, and
+`REMINDER_WHATSAPP_BUSINESS_NAME`. The reminder template code defaults to
+`BUSINESS_FOLLOWUP_WITH_IMAGE`; the image URL and business name default to the
+values in the example below.
+
+Create an active WhatsApp notification template using that code through
+`POST /notification-templates`. Its `providerTemplateId` must match the
+approved MSG91 template name, and its body placeholders must match the approved
+template. The reminder worker supplies these variables:
+
+```json
+{
+  "code": "BUSINESS_FOLLOWUP_WITH_IMAGE",
+  "channel": "whatsapp",
+  "category": "reminder",
+  "body": "{{customerName}}, {{businessName}} reminder for {{businessDisplayName}}. Contact {{contactPerson}} at {{phoneNumber}}. Follow-up: {{purpose}} on {{followUpDate}} at {{followUpTime}}. Assigned to {{assignedTo}}.",
+  "requiredVariables": [
+    "customerName",
+    "businessName",
+    "businessDisplayName",
+    "contactPerson",
+    "phoneNumber",
+    "followUpDate",
+    "followUpTime",
+    "purpose",
+    "assignedTo"
+  ],
+  "providerTemplateId": "BUSINESS_FOLLOWUP_WITH_IMAGE"
+}
+```
+
+The approved template must have an image header and matching body variable
+order. Adjust the example body to the exact approved MSG91 template text. The
+reminder worker supplies `headerImageUrl` as the image header and the other
+listed variables in the order declared by `requiredVariables`.
+
+## Notification delivery switches
+
+Set `CB_WHATSAPP=true`, `CB_SMS=true`, or `CB_EMAIL=true` to stop delivery for
+that channel. Each switch defaults to `false` (delivery remains enabled) when
+unset. Any value other than `true`, ignoring case and surrounding whitespace,
+also leaves delivery enabled.
+
 ## Compile and run the project
 
 ```bash

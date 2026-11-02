@@ -1,11 +1,7 @@
 import mongoose, { Collection,Document,Model, Schema } from 'mongoose';
 
-import { AuditLogSchema, BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, SubscriptionPlanSchema, SubscriptionSchema, UserSchema } from './schemas';
-import type { AuditLog, Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note, User } from './interfaces';
-import { RefreshTokenSchema } from './schemas/refresh-token.schema';
-import { RefreshToken } from './interfaces/refresh-token.interface';
-import { TenantSchema } from './schemas/tenant.schema';
-import { Tenant } from './interfaces/tenant.interface';
+import { AuditLogSchema, BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, NotificationLogSchema, NotificationTemplateSchema, SubscriptionPlanSchema, RefreshTokenSchema, SubscriptionSchema, TenantSchema, UserSchema } from './schemas';
+import type { AuditLog, Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note,NotificationLog,NotificationTemplate, RefreshToken, Tenant, User } from './interfaces';
 
 type SchemaDefinition = {
   key: string;
@@ -45,6 +41,16 @@ const SCHEMAS: SchemaDefinition[] = [
     schema: NoteSchema,
   },
   {
+    key: 'notificationLog',
+    name: 'NotificationLog',
+    schema: NotificationLogSchema
+  },
+  {
+    key: 'notificationTemplate',
+    name: 'NotificationTemplate',
+    schema: NotificationTemplateSchema
+  },
+  {
     key: 'refreshToken',
     name: 'RefreshToken',
     schema: RefreshTokenSchema,
@@ -72,6 +78,8 @@ export class MongoModels {
   readonly business!: Model<Business>;
   readonly followUp!: Model<FollowUp>;
   readonly category!: Model<Category>;
+  readonly notificationLog!: Model<NotificationLog>;
+  readonly notificationTemplate!: Model<NotificationTemplate>;
   readonly note!: Model<Note>;
   readonly user!: Model<User>;
   readonly refreshToken!: Model<RefreshToken>

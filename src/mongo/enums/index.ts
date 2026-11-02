@@ -7,3 +7,5 @@ export * from './subscription-status.enum'
 export * from './subscription-billing-cycle.enum';
 export * from './audit-log-action.enum';
 export * from './audit-log-entity-type.enum';
+export * from './notification-types.enum';
+export * from './notification-provider.enum';

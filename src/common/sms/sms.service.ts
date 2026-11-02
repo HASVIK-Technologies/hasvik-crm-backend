@@ -4,6 +4,8 @@ import { Msg91Service } from './providers/msg91.service';
 import { GupshupService } from './providers/gupshup.service';
 import { SmsProvider } from './interfaces/sms.interface';
 import { TwilioService } from './providers/twilio.service';
+import { NotificationChannel } from '../../mongo/enums';
+import { getNotificationDeliveryBlockReason } from '../notification-delivery.guard';
 
 @Injectable()
 export class SmsService {
@@ -26,6 +28,12 @@ export class SmsService {
   }
 
   async sendSms(to: string, message: string) {
+    if (
+      getNotificationDeliveryBlockReason(this.config, NotificationChannel.SMS)
+    ) {
+      return;
+    }
+
     try {
       return await this.provider.sendSms(to, message);
     } catch (err) {

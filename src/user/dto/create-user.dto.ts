@@ -24,6 +24,18 @@ export class CreateUserDto {
   email!: string;
 
   @ApiProperty({
+    example: '+919876543210',
+    description: 'User phone number',
+  })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  phoneNumber!: string;
+
+  @ApiProperty({
     example: 'hasvik',
     description: 'User full name',
   })

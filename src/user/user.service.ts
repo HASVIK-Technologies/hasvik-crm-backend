@@ -34,21 +34,27 @@ export class UserService {
       `Creating user. Email: ${data.email}`,
     );
 
-    const existingUser =
-      await this.mongo.models.user
-        .findOne({
-          email: data.email,
-          tenantId: this.mongo.toObjectId(tenantId),
-        })
-        .exec();
+    const duplicateConditions: Record<string, string>[] = [
+      { email: data.email },
+    ];
+    if (data.phoneNumber) {
+      duplicateConditions.push({ phoneNumber: data.phoneNumber });
+    }
+
+    const existingUser = await this.mongo.models.user
+      .findOne({
+        tenantId: this.mongo.toObjectId(tenantId),
+        $or: duplicateConditions,
+      })
+      .exec();
 
     if (existingUser) {
       this.logger.warn(
-        `User already exists with email: ${data.email}`,
+        `User already exists with email or phone number. Email: ${data.email}`,
       );
 
       throw new ConflictException(
-        'User with this email already exists.',
+        'User with this email or phone number already exists.',
       );
     }
 
@@ -254,6 +260,12 @@ export class UserService {
             $options: 'i',
           },
         },
+        {
+          phoneNumber: {
+            $regex: search,
+            $options: 'i',
+          },
+        },
       ];
     }
 
@@ -288,24 +300,31 @@ export class UserService {
       );
     }
 
-    // Check duplicate email
+    // Check duplicate email or phone number
+    const duplicateConditions: Record<string, string>[] = [];
     if (data.email) {
-      const existingUser =
-        await this.mongo.models.user.findOne({
-          email: data.email,
-          _id: {
-            $ne: this.mongo.toObjectId(id),
-          },
-          tenantId: this.mongo.toObjectId(tenantId),
-        });
+      duplicateConditions.push({ email: data.email });
+    }
+    if (data.phoneNumber) {
+      duplicateConditions.push({ phoneNumber: data.phoneNumber });
+    }
+
+    if (duplicateConditions.length > 0) {
+      const existingUser = await this.mongo.models.user.findOne({
+        $or: duplicateConditions,
+        _id: {
+          $ne: this.mongo.toObjectId(id),
+        },
+        tenantId: this.mongo.toObjectId(tenantId),
+      });
 
       if (existingUser) {
         this.logger.warn(
-          `Duplicate email found while updating user. User ID: ${id}, Email: ${data.email}`,
+          `Duplicate email or phone number found while updating user. User ID: ${id}`,
         );
 
         throw new ConflictException(
-          'Another user with this email already exists.',
+          'Another user with this email or phone number already exists.',
         );
       }
     }
