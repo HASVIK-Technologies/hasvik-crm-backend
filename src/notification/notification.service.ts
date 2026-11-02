@@ -106,6 +106,7 @@ export class NotificationService {
       this.configService,
       dto.channel,
     );
+    console.log('Delivery block reason:', deliveryBlockReason);
     if (deliveryBlockReason) {
       // Update the log to reflect the failure and return it from here
       return await this.mongo.models.notificationLog.findByIdAndUpdate(

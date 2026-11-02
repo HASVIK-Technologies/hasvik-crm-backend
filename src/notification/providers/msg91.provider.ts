@@ -141,6 +141,11 @@ export class Msg91Provider implements NotificationProvider {
     let result: Msg91WhatsAppResponse;
 
     try {
+      
+      console.log('MSG91 WhatsApp request payload:', JSON.stringify(payload));
+      console.log('MSG91 WhatsApp request URL:', apiUrl);
+      console.log('MSG91 WhatsApp request auth key:', authKey ? '***' : 'MISSING');
+
       response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
