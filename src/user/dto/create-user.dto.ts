@@ -32,7 +32,7 @@ export class CreateUserDto {
   )
   @IsString()
   @IsNotEmpty()
-  @MaxLength(20)
+  @MaxLength(10)
   phoneNumber!: string;
 
   @ApiProperty({

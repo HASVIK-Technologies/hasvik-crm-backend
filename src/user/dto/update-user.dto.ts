@@ -25,7 +25,7 @@ export class UpdateUserDto {
   email?: string;
 
   @ApiPropertyOptional({
-    example: '+919876543210',
+    example: '9876543210',
     description: 'User phone number',
   })
   @Transform(({ value }) =>
@@ -33,7 +33,7 @@ export class UpdateUserDto {
   )
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(10)
   phoneNumber?: string;
 
   @ApiPropertyOptional({
