@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayUnique,
   IsArray,
   IsEmail,
   IsEnum,
@@ -176,7 +177,18 @@ export class CreateBusinessDto {
   @IsOptional()
   @IsString()
   leadSource?: string;
-  
+
+  @ApiPropertyOptional({
+    description: 'Tags associated with the business',
+    type: [String],
+    example: ['673a12345678901234567890'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  tagIds?: string[];
+    
   @ApiPropertyOptional({
     type: CreateBusinessFollowUpDto,
     description: 'Optional initial follow-up for the business',

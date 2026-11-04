@@ -1,7 +1,7 @@
 import mongoose, { Collection,Document,Model, Schema } from 'mongoose';
 
-import { AuditLogSchema, BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, NotificationLogSchema, NotificationTemplateSchema, SubscriptionPlanSchema, RefreshTokenSchema, SubscriptionSchema, TenantSchema, UserSchema } from './schemas';
-import type { AuditLog, Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note,NotificationLog,NotificationTemplate, RefreshToken, Tenant, User } from './interfaces';
+import { AuditLogSchema, BusinessSchema, CategorySchema, FollowUpSchema, NoteSchema, NotificationLogSchema, NotificationTemplateSchema, SubscriptionPlanSchema, RefreshTokenSchema, SubscriptionSchema, TagSchema, TenantSchema, UserSchema } from './schemas';
+import type { AuditLog, Business, Category, FollowUp, ISubscription, ISubscriptionPlan, Note,NotificationLog,NotificationTemplate, RefreshToken, Tag, Tenant, User } from './interfaces';
 
 type SchemaDefinition = {
   key: string;
@@ -66,6 +66,11 @@ const SCHEMAS: SchemaDefinition[] = [
     schema: SubscriptionSchema,
   },
   {
+    key: 'tag',
+    name: 'Tag',
+    schema: TagSchema,
+  },
+  {
     key: 'tenant',
     name: 'Tenant',
     schema: TenantSchema,
@@ -85,6 +90,7 @@ export class MongoModels {
   readonly refreshToken!: Model<RefreshToken>
   readonly subscriptionPlan!: Model<ISubscriptionPlan>;
   readonly subscription!: Model<ISubscription>;
+  readonly tag!: Model<Tag>;
   readonly tenant!: Model<Tenant>;
   // Existing MongoDB collection; no Mongoose schema required 
   readonly city!: Collection<Document>;

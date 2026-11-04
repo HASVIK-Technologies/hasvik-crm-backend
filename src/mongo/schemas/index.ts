@@ -8,5 +8,6 @@ export * from './notification-template.schema';
 export * from './audit-log.schema';
 export * from './subscription.schema';
 export * from './subscription-plan.schema';
+export * from './tag.schema';
 export * from './tenant.schema';
 export * from './refresh-token.schema';

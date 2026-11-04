@@ -180,6 +180,38 @@ export class BusinessService {
             preserveNullAndEmptyArrays: true,
           },
         },
+        // Tags
+        {
+          $lookup: {
+            from: 'tags',
+            let: {
+              tagIds: { $ifNull: ['$tagIds', []] },
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $in: ['$_id', '$$tagIds'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                      { $eq: ['$isActive', true] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  key: 1,
+                  color: 1,
+                },
+              },
+            ],
+            as: 'tags',
+          },
+        },
 
         // Assigned user (tenant-scoped)
         {
@@ -745,6 +777,38 @@ export class BusinessService {
           },
         },
 
+        // Tags
+        {
+          $lookup: {
+            from: 'tags',
+            let: {
+              tagIds: { $ifNull: ['$tagIds', []] },
+              businessTenantId: '$tenantId',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $in: ['$_id', '$$tagIds'] },
+                      { $eq: ['$tenantId', '$$businessTenantId'] },
+                      { $eq: ['$isActive', true] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  key: 1,
+                  color: 1,
+                },
+              },
+            ],
+            as: 'tags',
+          },
+        },
         // 5. Populate assigned user with tenant isolation
         {
           $lookup: {
@@ -895,6 +959,7 @@ export class BusinessService {
       categoryId,
       city,
       isActive,
+      tagIds
     } = query;
 
     const filter: Record<string, any> = {
@@ -949,15 +1014,21 @@ export class BusinessService {
         $options: 'i',
       };
     }
+
+    if (tagIds && tagIds.length > 0) {
+      filter.tagIds = { $in: tagIds.map((id) => this.mongo.toObjectId(id)) };
+    }
+
     return filter;
   }
 
   private mapBusinessResponse(business: any): BusinessResponse {
-    const { categoryId, assignedTo,...businessData } = business;
+    const { categoryId, assignedTo, tagIds, ...businessData } = business;
     return {
       ...businessData,
       assignee: assignedTo,
       category: categoryId,
+      tagIds: tagIds || [],
     };
   }
 }

@@ -17,6 +17,7 @@ import { TenantModule } from './tenant/tenant.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ReminderModule } from './workers/reminder/reminder.module';
 import { NotificationModule } from './notification/notification.module';
+import { TagModule } from './tag/tag.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { NotificationModule } from './notification/notification.module';
     TenantModule,
     ReminderModule,
     NotificationModule,
+    TagModule,
   ],
   controllers: [AppController],
   providers: [AppService],

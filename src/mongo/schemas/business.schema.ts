@@ -120,6 +120,13 @@ export const BusinessSchema: Schema<Business> = new Schema<Business>(
       index: true,
     },
 
+    tagIds: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Tag',
+      default: [],
+      index: true,
+    },
+
     createdBy: {
       type: Types.ObjectId,
       ref: 'User',

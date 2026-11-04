@@ -1,4 +1,6 @@
 import {
+  IsArray,
+  ArrayUnique,
   IsDateString,
   IsEnum,
   IsInt,
@@ -50,4 +52,15 @@ export class CreateFollowUpDto {
   @IsInt()
   @Min(0)
   reminderInMinutes?: number;
+
+  @ApiPropertyOptional({
+    description: 'Tags associated with the business',
+    type: [String],
+    example: ['673a12345678901234567890'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  tagIds?: string[];
 }

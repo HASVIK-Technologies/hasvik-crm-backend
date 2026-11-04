@@ -1,4 +1,6 @@
 import {
+  ArrayUnique,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -48,6 +50,26 @@ export class FollowUpFilterDto {
   @IsOptional()
   @IsEnum(FollowUpType)
   type?: FollowUpType;
+
+  @ApiPropertyOptional({
+    description: 'Filter follow-ups by tag IDs. Matches any selected tag.',
+    type: [String],
+    example: [
+      '673a12345678901234567890',
+      '673a12345678901234567891',
+    ],
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((id) => id.trim());
+    }
+    return value;
+  })
+  @IsArray()
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  tagIds?: string[];
     
   @ApiPropertyOptional({
     example: '2026-08-28T00:00:00.000Z',

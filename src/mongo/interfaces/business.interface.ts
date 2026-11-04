@@ -44,6 +44,8 @@ export interface Business {
 
   assignedTo?: Types.ObjectId;
 
+  tagIds: Types.ObjectId[];
+
   createdBy?: Types.ObjectId;
 
   updatedBy?: Types.ObjectId;

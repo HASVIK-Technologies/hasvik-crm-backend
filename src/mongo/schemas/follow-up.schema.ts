@@ -54,6 +54,13 @@ export const FollowUpSchema: Schema<FollowUp> = new Schema<FollowUp>(
       type: Date,
     },
 
+    tagIds: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Tag',
+      default: [],
+      index: true,
+    },
+
     createdBy: {
       type: Types.ObjectId,
       ref: 'User',

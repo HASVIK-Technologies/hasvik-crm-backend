@@ -1,4 +1,6 @@
 import {
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsMongoId,
   IsNumberString,
@@ -6,6 +8,7 @@ import {
   IsString,
 } from 'class-validator';
 import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { BusinessStatus } from 'src/mongo/enums';
 
 export class BusinessFilterDto {
@@ -57,6 +60,26 @@ export class BusinessFilterDto {
   @IsOptional()
   @IsString()
   isActive?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter follow-ups by tag IDs. Matches any selected tag.',
+    type: [String],
+    example: [
+      '673a12345678901234567890',
+      '673a12345678901234567891',
+    ],
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((id) => id.trim());
+    }
+    return value;
+  })
+  @IsArray()
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  tagIds?: string[];
 
   @ApiPropertyOptional({
     example: '1',

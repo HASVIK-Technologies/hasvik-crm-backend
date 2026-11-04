@@ -154,6 +154,14 @@ export class FollowUpService {
      . findOne({ _id: this.mongo.toObjectId(id), tenantId })
       .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
       .populate('assignedTo', '_id fullName')
+      .populate({
+        path: 'tagIds',
+        select: '_id name key color',
+        match: {
+          tenantId: this.mongo.toObjectId(tenantId),
+          isActive: true,
+        },
+      })
       .lean()
       .exec();
 
@@ -254,7 +262,38 @@ export class FollowUpService {
           preserveNullAndEmptyArrays: true,
         },
       },
-
+      // 4. Populate tags
+      {
+        $lookup: {
+          from: 'tags',
+          let: {
+            tagIds: { $ifNull: ['$tagIds', []] },
+            followUpTenantId: '$tenantId',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $in: ['$_id', '$$tagIds'] },
+                    { $eq: ['$tenantId', '$$followUpTenantId'] },
+                    { $eq: ['$isActive', true] },
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                key: 1,
+                color: 1,
+              },
+            },
+          ],
+          as: 'tags',
+        },
+      },
       // Sort
       {
         $sort: {
@@ -396,6 +435,7 @@ export class FollowUpService {
       type,
       fromDate,
       toDate,
+      tagIds
     } = query;
 
     const now = moment.utc();
@@ -418,6 +458,11 @@ export class FollowUpService {
     // Follow-up type filter
     if (type) {
       filter.type = type;
+    }
+
+    // Tag IDs filter
+    if (tagIds && tagIds.length > 0) {
+      filter.tagIds = { $in: tagIds.map((id) => this.mongo.toObjectId(id)) };
     }
 
     // Explicit status filter

@@ -20,6 +20,8 @@ export interface FollowUp {
 
   completedAt?: Date;
 
+  tagIds: Types.ObjectId[];
+
   createdBy: Types.ObjectId;
 
   updatedBy?: Types.ObjectId;
