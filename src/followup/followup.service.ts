@@ -110,6 +110,10 @@ export class FollowUpService {
         path: 'assignedTo',
         select: '_id fullName',
       },
+      {
+        path: 'tagIds',
+        select: '_id name color description',
+      },
     ]);
 
     this.logger.log(
@@ -154,14 +158,7 @@ export class FollowUpService {
      . findOne({ _id: this.mongo.toObjectId(id), tenantId })
       .populate('businessId', '_id name city phoneNumbers whatsappNumbers email')
       .populate('assignedTo', '_id fullName')
-      .populate({
-        path: 'tagIds',
-        select: '_id name key color',
-        match: {
-          tenantId: this.mongo.toObjectId(tenantId),
-          isActive: true,
-        },
-      })
+      .populate('tagIds', '_id name color description')
       .lean()
       .exec();
 
@@ -277,7 +274,6 @@ export class FollowUpService {
                   $and: [
                     { $in: ['$_id', '$$tagIds'] },
                     { $eq: ['$tenantId', '$$followUpTenantId'] },
-                    { $eq: ['$isActive', true] },
                   ],
                 },
               },
@@ -291,7 +287,7 @@ export class FollowUpService {
               },
             },
           ],
-          as: 'tags',
+          as: 'tagIds',
         },
       },
       // Sort
@@ -353,57 +349,7 @@ export class FollowUpService {
           },
         },
 
-        // 2. Populate business
-        {
-          $lookup: {
-            from: 'businesses',
-            localField: 'businessId',
-            foreignField: '_id',
-            as: 'businessId',
-            pipeline:[
-              {
-                $project: {
-                  _id: 1,
-                  name: 1,
-                  city: 1,
-                  phoneNumbers: 1,
-                  whatsappNumbers: 1,
-                  email: 1,
-                },
-              },
-            ]
-          },
-        },
-        {
-          $unwind: {
-            path: '$businessId',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-
-        // 3. Populate assigned user
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'assignedTo',
-            foreignField: '_id',
-            as: 'assignedTo',
-            pipeline:[
-              {
-                $project: {
-                  _id: 1,
-                  fullName: 1,
-                },
-              },
-            ]
-          },
-        },
-        {
-          $unwind: {
-            path: '$assignedTo',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
+        
 
         // 5. Sort follow-ups
         {
@@ -411,7 +357,89 @@ export class FollowUpService {
             scheduledAt: -1,
           },
         },
-      ]).exec();
+              // 4. Populate tags
+      {
+        $lookup: {
+          from: 'tags',
+          let: {
+            tagIds: { $ifNull: ['$tagIds', []] },
+            followUpTenantId: '$tenantId',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $in: ['$_id', '$$tagIds'] },
+                    { $eq: ['$tenantId', '$$followUpTenantId'] },
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                key: 1,
+                color: 1,
+              },
+            },
+          ],
+          as: 'tagIds',
+        },
+      },
+      // 2. Populate business
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessId',
+          foreignField: '_id',
+          as: 'businessId',
+          pipeline:[
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                city: 1,
+                phoneNumbers: 1,
+                whatsappNumbers: 1,
+                email: 1,
+              },
+            },
+          ]
+        },
+      },
+      {
+        $unwind: {
+          path: '$businessId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // 3. Populate assigned user
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedTo',
+          foreignField: '_id',
+          as: 'assignedTo',
+          pipeline:[
+            {
+              $project: {
+                _id: 1,
+                fullName: 1,
+              },
+            },
+          ]
+        },
+      },
+      {
+        $unwind: {
+          path: '$assignedTo',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ]).exec();
 
     this.logger.log(
       `Business follow-up history fetched successfully. Business ID: ${businessId}, Count: ${followUps.length}`,
@@ -882,10 +910,11 @@ export class FollowUpService {
   }
 
   private mapFollowUpResponse(followup: FollowUp): FollowUpResponse {
-    const { businessId, assignedTo, ...followUpData } = followup;
+    const { businessId, assignedTo,tagIds, ...followUpData } = followup;
 
     return {
       ...followUpData,
+      tags: tagIds || [],
       business: businessId,
       assignee: assignedTo,
       status: this.getRuntimeStatus(followup.status, followup.scheduledAt,), 

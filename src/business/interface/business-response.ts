@@ -1,14 +1,9 @@
 import { Types } from 'mongoose';
-import { Business, Category, User } from '../../mongo/interfaces';
+import { Business, Category, Tag, User } from '../../mongo/interfaces';
 
 export interface BusinessResponse
   extends Omit<Business, 'categoryId' | 'assignedTo'> {
   category: Category | null;
   assignee: User | null;
-  tags?: {
-    _id: Types.ObjectId;
-    name: string;
-    key: string;
-    color: string;
-  }[];
+  tags: Tag[];
 }

@@ -1,4 +1,6 @@
 import {
+  ArrayUnique,
+  IsArray,
   IsDateString,
   IsEnum,
   IsInt,
@@ -9,6 +11,7 @@ import {
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { FollowUpStatus, FollowUpType } from 'src/mongo/enums';
+import { Transform } from 'class-transformer';
 
 export class UpdateFollowUpDto {
   @ApiPropertyOptional({
@@ -53,4 +56,25 @@ export class UpdateFollowUpDto {
   @IsInt()
   @Min(0)
   reminderInMinutes?: number;
+
+    @ApiPropertyOptional({
+      description: 'Comma-separated tag IDs',
+      example: '673a12345678901234567890,673a12345678901234567891',
+      type: String,
+    })
+    @IsOptional()
+    @Transform(({ value }) => {
+      if (typeof value === 'string') {
+        return value
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean);
+      }
+  
+      return value;
+    })
+    @IsArray()
+    @ArrayUnique()
+    @IsMongoId({ each: true })
+    tagIds?: string[];
 }

@@ -199,7 +199,6 @@ export class BusinessService {
                     $and: [
                       { $in: ['$_id', '$$tagIds'] },
                       { $eq: ['$tenantId', '$$businessTenantId'] },
-                      { $eq: ['$isActive', true] },
                     ],
                   },
                 },
@@ -213,7 +212,7 @@ export class BusinessService {
                 },
               },
             ],
-            as: 'tags',
+            as: 'tagIds',
           },
         },
 
@@ -738,8 +737,7 @@ export class BusinessService {
     const skip = (page - 1) * limit;
     const now = new Date();
 
-    const [businesses, total] = await Promise.all([
-      this.mongo.models.business.aggregate([
+    const pipeline: any = [
         // 1. Filter businesses
         {
           $match: filter,
@@ -797,7 +795,6 @@ export class BusinessService {
                     $and: [
                       { $in: ['$_id', '$$tagIds'] },
                       { $eq: ['$tenantId', '$$businessTenantId'] },
-                      { $eq: ['$isActive', true] },
                     ],
                   },
                 },
@@ -811,7 +808,7 @@ export class BusinessService {
                 },
               },
             ],
-            as: 'tags',
+            as: 'tagIds',
           },
         },
         // 5. Populate assigned user with tenant isolation
@@ -940,7 +937,10 @@ export class BusinessService {
             preserveNullAndEmptyArrays: true,
           },
         },
-      ]).exec(),
+      ]
+    console.log("Final Pipeline:", JSON.stringify(pipeline));
+    const [businesses, total] = await Promise.all([
+      this.mongo.models.business.aggregate(pipeline).exec(),
 
       this.mongo.models.business.countDocuments(filter).exec(),
     ]);
@@ -1033,7 +1033,7 @@ export class BusinessService {
       ...businessData,
       assignee: assignedTo,
       category: categoryId,
-      tagIds: tagIds || [],
+      tags: tagIds || [],
     };
   }
 }
