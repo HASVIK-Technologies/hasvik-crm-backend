@@ -14,17 +14,18 @@ import {
 import { EntityType } from '../../mongo/enums';
 
 export class TagAutocompleteDto {
-  @ApiProperty({
+
+  @ApiPropertyOptional({
+    example: 'Hot Lead',
     description: 'Search tag by name',
-    example: 'Hot',
   })
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim() : value,
   )
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
-  search!: string;
+  @MaxLength(100)
+  search?: string;
 
   @ApiPropertyOptional({
     description: 'Entity type',

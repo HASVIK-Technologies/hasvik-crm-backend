@@ -41,12 +41,7 @@ export const TagSchema: Schema<Tag> = new Schema<Tag>(
       enum: Object.values(EntityType),
       index: true,
     },
-
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-
+    
     createdBy: {
       type: Types.ObjectId,
       required: true,

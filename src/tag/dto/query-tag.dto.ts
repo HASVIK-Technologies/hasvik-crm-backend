@@ -53,18 +53,4 @@ export class QueryTagDto {
   @IsOptional()
   @IsNumberString()
   limit?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter tags by active status',
-    example: true,
-    type: Boolean,
-  })
-  @IsOptional()
-  @Transform(({ value }) => {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return value;
-  })
-  @IsBoolean()
-  isActive?: boolean;
 }

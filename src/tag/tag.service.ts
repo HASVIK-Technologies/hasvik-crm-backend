@@ -34,18 +34,6 @@ export class TagService {
   constructor(private readonly mongo: MongoService) {}
 
   /**
-   * Entity type to MongoDB model mapping.
-   * Adjust model names according to your MongoModels registry.
-   */
-  private readonly entityModelMap: Record<string, string> = {
-    [TagEntityType.USER]: 'User',
-    [TagEntityType.BUSINESS]: 'Business',
-    [TagEntityType.FOLLOWUP]: 'FollowUp',
-    [TagEntityType.CATEGORY]: 'Category',
-    [TagEntityType.SUBSCRIPTION]: 'Subscription',
-  };
-
-  /**
    * Generate a URL-friendly tag key.
    */
   private generateTagKey(name: string): string {
@@ -92,12 +80,11 @@ export class TagService {
    * Find an active tag belonging to the authenticated tenant.
    */
   private async getTag(tagId: string, tenantId: string) {
-    this.validateObjectId(tagId, 'tag ID');
+    //this.validateObjectId(tagId, 'tag ID');
 
     const tag = await this.mongo.models.tag.findOne({
       _id: this.mongo.toObjectId(tagId),
       tenantId: this.mongo.toObjectId(tenantId),
-      isActive: true,
     }).lean();
 
     if (!tag) {
@@ -124,9 +111,9 @@ export class TagService {
         tenantId: this.mongo.toObjectId(tenantId),
         name,
         key,
+        entityType: dto.entityType,
         color: dto.color ?? '#64748B',
         description: dto.description?.trim() || undefined,
-        isActive: true,
         createdBy: this.mongo.toObjectId(userId),
       });
 
@@ -146,8 +133,7 @@ export class TagService {
   ) {
     const {
       entityType,
-      search,
-      isActive,
+      search
     } = query;
 
     const page = query.page !== undefined ? Number(query.page) : 1;
@@ -243,12 +229,15 @@ export class TagService {
       updateData.description = dto.description.trim() || null;
     }
 
+    if (dto.entityType !== undefined) {
+      updateData.entityType = dto.entityType;
+    }
+
     try {
       const tag = await this.mongo.models.tag.findOneAndUpdate(
         {
           _id: this.mongo.toObjectId(id),
-          tenantId: this.mongo.toObjectId(tenantId),
-          isActive: true,
+          tenantId: this.mongo.toObjectId(tenantId)
         },
         {
           $set: updateData,
@@ -263,11 +252,7 @@ export class TagService {
         throw new NotFoundException('Tag not found');
       }
 
-      return {
-        success: true,
-        message: 'Tag updated successfully',
-        data: tag,
-      };
+      return tag;
     } catch (error) {
       this.handleDuplicateError(error);
     }
@@ -308,25 +293,20 @@ export class TagService {
     const { search, entityType } = query;
     const limit = Number(query.limit) || 10;
 
-    if (!isObjectIdOrHexString(tenantId)) {
-      throw new BadRequestException('Invalid tenant ID.');
+    const filter: Record<string, any> = {
+      tenantId: this.mongo.toObjectId(tenantId),
+    };
+    if (search) {
+      filter.name = {
+        $regex: search,
+        $options: 'i',
+      };
+    }
+    if (entityType) {
+      filter.entityType = entityType;
     }
 
-    // Escape regex special characters
-    const escapedSearch = search.replace(
-      /[.*+?^${}()|[\]\\]/g,
-      '\\$&',
-    );
-
-    const tags = await this.mongo.models.tag.find({
-      tenantId: this.mongo.toObjectId(tenantId),
-      entityType,
-      isActive: true,
-      name: {
-        $regex: escapedSearch,
-        $options: 'i',
-      },
-    })
+    const tags = await this.mongo.models.tag.find(filter)
       .select('_id name key color entityType')
       .sort({ name: 1 })
       .limit(limit)

@@ -39,6 +39,23 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class TagController {
   constructor(private readonly tagService: TagService) {}
 
+   // TAG AUTOCOMPLETE
+  @Get('autocomplete')
+  @ApiOperation({ summary: 'Autocomplete tags' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tag suggestions fetched successfully',
+  })
+  async autocomplete(
+    @Req() req: any,
+    @Query() query: TagAutocompleteDto,
+  ) {
+    return await this.tagService.autocomplete(
+      req.user.tenantId,
+      query,
+    );
+  }
+  
   /**
    * Create a new tag
    * POST /tags
@@ -60,7 +77,7 @@ export class TagController {
 
   /**
    * Get all tags for authenticated tenant
-   * GET /tags?page=1&limit=10&search=hot&isActive=true
+   * GET /tags?page=1&limit=10&search=hot
    */
   @Get()
   async findAll(
@@ -120,23 +137,6 @@ export class TagController {
     const userId = req.user._id;
 
     return this.tagService.remove(id, tenantId, userId);
-  }
-
-  // TAG AUTOCOMPLETE
-  @Get('autocomplete')
-  @ApiOperation({ summary: 'Autocomplete tags' })
-  @ApiResponse({
-    status: 200,
-    description: 'Tag suggestions fetched successfully',
-  })
-  async autocomplete(
-    @Req() req: any,
-    @Query() query: TagAutocompleteDto,
-  ) {
-    return await this.tagService.autocomplete(
-      req.user.tenantId,
-      query,
-    );
   }
 
   /**

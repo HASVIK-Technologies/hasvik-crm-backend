@@ -12,8 +12,6 @@ export interface Tag {
   description?: string;
   entityType: EntityType
 
-  isActive: boolean;
-
   createdBy: Types.ObjectId;
   updatedBy?: Types.ObjectId;
 
