@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose';
-import { AuditLogEntityType } from '../enums';
+import { EntityType } from '../enums';
 import { AuditLog } from '../interfaces/audit-log.interface';
 
 export const AuditLogSchema: Schema<AuditLog> = new Schema<AuditLog>(
@@ -22,7 +22,7 @@ export const AuditLogSchema: Schema<AuditLog> = new Schema<AuditLog>(
     },
     entityType: {
       type: String,
-      enum: Object.values(AuditLogEntityType),
+      enum: Object.values(EntityType),
       required: true,
       trim: true,
       index: true,

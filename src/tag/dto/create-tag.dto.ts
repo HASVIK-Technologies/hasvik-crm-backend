@@ -2,6 +2,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsEnum,
   IsHexColor,
   IsNotEmpty,
   IsOptional,
@@ -9,6 +10,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import {EntityType} from '../../mongo/enums'
 
 export class CreateTagDto {
   @ApiProperty({
@@ -50,4 +52,12 @@ export class CreateTagDto {
     typeof value === 'string' ? value.trim() : value,
   )
   description?: string;
+
+  @ApiProperty({
+    example: EntityType.BUSINESS,
+    enum: EntityType,
+    description: 'Type of entity',
+  })
+  @IsEnum(EntityType)
+  entityType!: EntityType;
 }

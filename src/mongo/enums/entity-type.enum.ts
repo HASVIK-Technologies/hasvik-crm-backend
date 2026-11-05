@@ -1,4 +1,4 @@
-export enum AuditLogEntityType {
+export enum EntityType {
   TENANT = 'TENANT',
   BUSINESS = 'BUSINESS',
   FOLLOWUP = 'FOLLOWUP',

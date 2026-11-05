@@ -19,7 +19,7 @@ import { BusinessStatus } from '../mongo/enums';
 import { FollowUpService } from '../followup/followup.service';
 import { FollowUpResponse } from 'src/followup/interface/followup-response';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { AuditLogAction, EntityType } from '../mongo/enums';
 
 function normalizeForComparison(value: unknown): unknown {
   const serialized = JSON.stringify(value);
@@ -96,7 +96,7 @@ export class BusinessService {
       tenantId,
       userId,
       action: AuditLogAction.CREATE,
-      entityType: AuditLogEntityType.BUSINESS,
+      entityType: EntityType.BUSINESS,
       entityId: createdBusiness._id.toString(),
       message: 'Business created',
       details: { newData: createdBusiness.toObject() },
@@ -433,7 +433,7 @@ export class BusinessService {
       tenantId,
       userId,
       action: AuditLogAction.UPDATE,
-      entityType: AuditLogEntityType.BUSINESS,
+      entityType: EntityType.BUSINESS,
       entityId: id,
       message: 'Business updated',
       details: { changedFields },
@@ -499,7 +499,7 @@ export class BusinessService {
       tenantId,
       userId,
       action: AuditLogAction.DELETE,
-      entityType: AuditLogEntityType.BUSINESS,
+      entityType: EntityType.BUSINESS,
       entityId: id,
       message: 'Business deleted',
     });

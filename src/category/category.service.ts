@@ -13,7 +13,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryFilterDto } from './dto/category-filter.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { AuditLogAction, EntityType } from '../mongo/enums';
 
 @Injectable()
 export class CategoryService {
@@ -74,7 +74,7 @@ export class CategoryService {
       tenantId,
       userId,
       action: AuditLogAction.CREATE,
-      entityType: AuditLogEntityType.CATEGORY,
+      entityType: EntityType.CATEGORY,
       entityId: createdCategory._id.toString(),
       message: 'Category created',
       details: { newData: createdCategory.toObject() },
@@ -334,7 +334,7 @@ export class CategoryService {
       tenantId,
       userId,
       action: AuditLogAction.UPDATE,
-      entityType: AuditLogEntityType.CATEGORY,
+      entityType: EntityType.CATEGORY,
       entityId: id,
       message: 'Category updated',
       details: { changedFields: Object.keys(dto) },
@@ -404,7 +404,7 @@ export class CategoryService {
       action: isActive
         ? AuditLogAction.STATUS_CHANGE
         : AuditLogAction.DELETE,
-      entityType: AuditLogEntityType.CATEGORY,
+      entityType: EntityType.CATEGORY,
       entityId: id,
       message: `Category ${isActive ? 'activated' : 'deactivated'}`,
       details: { isActive },

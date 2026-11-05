@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsNumberString,
   IsOptional,
@@ -10,8 +11,19 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { EntityType } from '../../mongo/enums';
+
 
 export class QueryTagDto {
+  @ApiPropertyOptional({
+    example: EntityType.BUSINESS,
+    enum: EntityType,
+    description: 'Type of entity',
+  })
+  @IsOptional()
+  @IsEnum(EntityType)
+  entityType!: EntityType;
+
   @ApiPropertyOptional({
     description: 'Search tags by name or key',
     example: 'Hot Lead',

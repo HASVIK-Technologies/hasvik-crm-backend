@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { AuditLogAction, AuditLogEntityType } from '../enums';
+import { AuditLogAction, EntityType } from '../enums';
 
 export interface AuditLog {
   _id: Types.ObjectId;
@@ -7,7 +7,7 @@ export interface AuditLog {
   tenantId: Types.ObjectId;
   userId?: Types.ObjectId;
   action: AuditLogAction;
-  entityType: AuditLogEntityType;
+  entityType: EntityType;
   entityId?: Types.ObjectId;
   message?: string;
   details?: Record<string, unknown>;

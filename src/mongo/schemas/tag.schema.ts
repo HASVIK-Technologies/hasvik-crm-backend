@@ -1,6 +1,7 @@
 
 import { Schema, Types } from 'mongoose';
 import { Tag } from '../interfaces';
+import { EntityType } from '../enums';
 
 export const TagSchema: Schema<Tag> = new Schema<Tag>(
   {
@@ -35,6 +36,12 @@ export const TagSchema: Schema<Tag> = new Schema<Tag>(
       default: null,
     },
 
+    entityType: {
+      type: String,
+      enum: Object.values(EntityType),
+      index: true,
+    },
+
     isActive: {
       type: Boolean,
       default: true,
@@ -59,13 +66,13 @@ export const TagSchema: Schema<Tag> = new Schema<Tag>(
   },
 );
 
-// Prevent duplicate tag keys within the same tenant
 TagSchema.index(
-  { tenantId: 1, key: 1 },
+  { tenantId: 1, entityType: 1, key: 1 },
   { unique: true },
 );
 
-// Optimize active tag listing by tenant
-TagSchema.index(
-  { tenantId: 1, isActive: 1, name: 1 },
-);
+TagSchema.index({
+  tenantId: 1,
+  entityType: 1,
+  isActive: 1,
+});

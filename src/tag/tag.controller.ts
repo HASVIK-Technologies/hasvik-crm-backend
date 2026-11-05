@@ -24,13 +24,15 @@ import { TagService } from './tag.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { QueryTagDto } from './dto/query-tag.dto';
+import { TagAutocompleteDto } from './dto/tag-autocomplete.dto';
+
 
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('tags')
-@ApiTags('tags')
+@ApiTags('Tags')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
 
@@ -118,6 +120,23 @@ export class TagController {
     const userId = req.user._id;
 
     return this.tagService.remove(id, tenantId, userId);
+  }
+
+  // TAG AUTOCOMPLETE
+  @Get('autocomplete')
+  @ApiOperation({ summary: 'Autocomplete tags' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tag suggestions fetched successfully',
+  })
+  async autocomplete(
+    @Req() req: any,
+    @Query() query: TagAutocompleteDto,
+  ) {
+    return await this.tagService.autocomplete(
+      req.user.tenantId,
+      query,
+    );
   }
 
   /**

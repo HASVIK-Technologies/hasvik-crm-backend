@@ -10,7 +10,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { AuditLogAction, AuditLogEntityType } from '../../mongo/enums';
+import { AuditLogAction, EntityType } from '../../mongo/enums';
 
 export class AuditLogFilterDto {
   @ApiPropertyOptional({ example: AuditLogAction.CREATE, enum: AuditLogAction })
@@ -18,10 +18,10 @@ export class AuditLogFilterDto {
   @IsEnum(AuditLogAction)
   action!: AuditLogAction;
 
-  @ApiPropertyOptional({ example: AuditLogEntityType.BUSINESS, enum: AuditLogEntityType })
+  @ApiPropertyOptional({ example: EntityType.BUSINESS, enum: EntityType })
   @IsOptional()
-  @IsEnum(AuditLogEntityType)
-  entityType?: AuditLogEntityType;
+  @IsEnum(EntityType)
+  entityType?: EntityType;
 
   @ApiPropertyOptional({ example: '665c12345678901234567890' })
   @IsOptional()

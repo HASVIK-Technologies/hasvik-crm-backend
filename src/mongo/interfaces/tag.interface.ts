@@ -1,5 +1,6 @@
 
 import { Types } from 'mongoose';
+import { EntityType } from '../enums';
 
 export interface Tag {
   _id: Types.ObjectId;
@@ -9,6 +10,7 @@ export interface Tag {
   key: string;
   color?: string;
   description?: string;
+  entityType: EntityType
 
   isActive: boolean;
 

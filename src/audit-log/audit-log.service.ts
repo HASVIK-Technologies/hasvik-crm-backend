@@ -12,7 +12,7 @@ import { MongoService } from '../mongo/mongo.service';
 import { AuditLogFilterDto } from './dto/audit-log-filter.dto';
 import {
   AuditLogAction,
-  AuditLogEntityType,
+  EntityType,
 } from '../mongo/enums';
 
 
@@ -20,7 +20,7 @@ export interface CreateAuditLogRequest {
   tenantId: string;
   userId?: string;
   action: AuditLogAction;
-  entityType: AuditLogEntityType;
+  entityType: EntityType;
   entityId?: string;
   message?: string;
   details?: Record<string, unknown>;

@@ -15,7 +15,7 @@ import { UserService } from 'src/user/user.service';
 import { UIUserRole, UserRole } from 'src/mongo/enums';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { AuditLogAction, EntityType } from '../mongo/enums';
 import { GetTenantFilterDto, TenantKPIsDto } from './dto/get-tenant-filter.dto';
 
 @Injectable()
@@ -51,7 +51,7 @@ export class TenantService {
         tenantId: tenant._id.toString(),
         userId: undefined,
         action: AuditLogAction.CREATE,
-        entityType: AuditLogEntityType.TENANT,
+        entityType: EntityType.TENANT,
         entityId: tenant._id.toString(),
         message: 'Tenant created',
         details: { newData: tenant.toObject() },
@@ -208,7 +208,7 @@ export class TenantService {
         tenantId: id,
         userId,
         action: AuditLogAction.UPDATE,
-        entityType: AuditLogEntityType.TENANT,
+        entityType: EntityType.TENANT,
         entityId: id,
         message: 'Tenant updated',
         details: { changedFields: Object.keys(dto) },
@@ -246,7 +246,7 @@ export class TenantService {
       action: isActive
         ? AuditLogAction.STATUS_CHANGE
         : AuditLogAction.DELETE,
-      entityType: AuditLogEntityType.TENANT,
+      entityType: EntityType.TENANT,
       entityId: id,
       message: `Tenant ${isActive ? 'activated' : 'deactivated'}`,
       details: { isActive },

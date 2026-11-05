@@ -16,7 +16,7 @@ import { FollowUpKpiResponse } from './interface/kpis-response';
 import moment from 'moment-timezone';
 import { FollowUpResponse } from './interface/followup-response';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { AuditLogAction, EntityType } from '../mongo/enums';
 
 @Injectable()
 export class FollowUpService {
@@ -120,7 +120,7 @@ export class FollowUpService {
       tenantId,
       userId,
       action: AuditLogAction.CREATE,
-      entityType: AuditLogEntityType.FOLLOWUP,
+      entityType: EntityType.FOLLOWUP,
       entityId: savedFollowUp._id.toString(),
       message: 'Follow-up created',
       details: { newData: { ...followUpData, createdBy: userId } },
@@ -661,7 +661,7 @@ export class FollowUpService {
       tenantId,
       userId,
       action: AuditLogAction.UPDATE,
-      entityType: AuditLogEntityType.FOLLOWUP,
+      entityType: EntityType.FOLLOWUP,
       entityId: id,
       message: 'Follow-up updated',
       details: { changedFields: Object.keys(dto) },
@@ -872,7 +872,7 @@ export class FollowUpService {
         status === FollowUpStatus.CANCELLED
           ? AuditLogAction.DELETE
           : AuditLogAction.STATUS_CHANGE,
-      entityType: AuditLogEntityType.FOLLOWUP,
+      entityType: EntityType.FOLLOWUP,
       entityId: id,
       message: `Follow-up status changed to ${status.toLowerCase()}`,
       details: { status },

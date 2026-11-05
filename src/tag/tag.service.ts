@@ -6,13 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { Types } from 'mongoose';
+import { isObjectIdOrHexString, Types } from 'mongoose';
 
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { QueryTagDto } from './dto/query-tag.dto';
 
 import { MongoService } from 'src/mongo/mongo.service';
+import { TagAutocompleteDto } from './dto/tag-autocomplete.dto';
 
 export enum TagEntityType {
   USER = 'USER',
@@ -144,6 +145,7 @@ export class TagService {
     query: QueryTagDto,
   ) {
     const {
+      entityType,
       search,
       isActive,
     } = query;
@@ -156,8 +158,8 @@ export class TagService {
       tenantId: this.mongo.toObjectId(tenantId),
     };
 
-    if (typeof isActive === 'boolean') {
-      filter.isActive = isActive;
+    if (entityType) {
+      filter.entityType = entityType;
     }
 
     if (search?.trim()) {
@@ -273,7 +275,7 @@ export class TagService {
 
   /**
    * DELETE /tags/:id
-   * Deactivate a tag.
+   * Delete a tag.
    */
   async remove(
     id: string,
@@ -282,21 +284,11 @@ export class TagService {
   ) {
     await this.getTag(id, tenantId);
 
-    const tag = await this.mongo.models.tag.findOneAndUpdate(
+    const tag = await this.mongo.models.tag.deleteOne(
       {
         _id: this.mongo.toObjectId(id),
         tenantId: this.mongo.toObjectId(tenantId),
-        isActive: true,
-      },
-      {
-        $set: {
-          isActive: false,
-          updatedBy: this.mongo.toObjectId(userId),
-        },
-      },
-      {
-        new: true,
-      },
+      }
     ).lean();
 
     if (!tag) {
@@ -304,9 +296,44 @@ export class TagService {
     }
 
     return {
-      success: true,
-      message: 'Tag deactivated successfully',
+      message: 'Tag deleted successfully',
     };
+  }
+
+  // TAG AUTOCOMPLETE
+  async autocomplete(
+    tenantId: string,
+    query: TagAutocompleteDto,
+  ) {
+    const { search, entityType } = query;
+    const limit = Number(query.limit) || 10;
+
+    if (!isObjectIdOrHexString(tenantId)) {
+      throw new BadRequestException('Invalid tenant ID.');
+    }
+
+    // Escape regex special characters
+    const escapedSearch = search.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&',
+    );
+
+    const tags = await this.mongo.models.tag.find({
+      tenantId: this.mongo.toObjectId(tenantId),
+      entityType,
+      isActive: true,
+      name: {
+        $regex: escapedSearch,
+        $options: 'i',
+      },
+    })
+      .select('_id name key color entityType')
+      .sort({ name: 1 })
+      .limit(limit)
+      .lean()
+      .exec();
+
+    return tags;
   }
 
   /**

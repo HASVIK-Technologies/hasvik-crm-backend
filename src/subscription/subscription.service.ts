@@ -18,7 +18,7 @@ import { SubscriptionStatusDto } from './dto/subscription-status.dto';
 import moment from 'moment';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { AuditLogAction, AuditLogEntityType } from '../mongo/enums';
+import { AuditLogAction, EntityType } from '../mongo/enums';
 import { GetSubscriptionFilterDto } from './dto/get-subscription-filter.dto';
 
 
@@ -137,7 +137,7 @@ export class SubscriptionService {
         tenantId,
         userId,
         action: AuditLogAction.CREATE,
-        entityType: AuditLogEntityType.SUBSCRIPTION,
+        entityType: EntityType.SUBSCRIPTION,
         entityId: subscriptionId,
         message: 'Subscription created',
       });
@@ -326,7 +326,7 @@ export class SubscriptionService {
           dto.status === SubscriptionStatus.CANCELLED
             ? AuditLogAction.DELETE
             : AuditLogAction.STATUS_CHANGE,
-        entityType: AuditLogEntityType.SUBSCRIPTION,
+        entityType: EntityType.SUBSCRIPTION,
         entityId: subscription._id.toString(),
         message: `Subscription status changed to ${dto.status.toLowerCase()}`,
         details: { status: dto.status },
@@ -449,7 +449,7 @@ export class SubscriptionService {
         tenantId: subscription.tenantId.toString(),
         userId: user.userId,
         action: AuditLogAction.UPDATE,
-        entityType: AuditLogEntityType.SUBSCRIPTION,
+        entityType: EntityType.SUBSCRIPTION,
         entityId: subscription._id.toString(),
         message: 'Subscription renewed',
         details: { status: subscription.status, renewed: true },
