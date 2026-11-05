@@ -62,18 +62,19 @@ export class BusinessFilterDto {
   isActive?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter follow-ups by tag IDs. Matches any selected tag.',
-    type: [String],
-    example: [
-      '673a12345678901234567890',
-      '673a12345678901234567891',
-    ],
+    description: 'Comma-separated tag IDs',
+    example: '673a12345678901234567890,673a12345678901234567891',
+    type: String,
   })
   @IsOptional()
   @Transform(({ value }) => {
     if (typeof value === 'string') {
-      return value.split(',').map((id) => id.trim());
+      return value
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
     }
+
     return value;
   })
   @IsArray()

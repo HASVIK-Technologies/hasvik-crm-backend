@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsEmail,
@@ -192,4 +193,25 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated tag IDs',
+    example: '673a12345678901234567890,673a12345678901234567891',
+    type: String,
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
+    }
+
+    return value;
+  })
+  @IsArray()
+  @ArrayUnique()
+  @IsMongoId({ each: true })
+  tagIds?: string[];
 }

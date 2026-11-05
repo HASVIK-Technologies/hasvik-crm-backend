@@ -15,6 +15,7 @@ import {
   ApiProperty,
   ApiPropertyOptional,
 } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { BusinessStatus } from 'src/mongo/enums';
 import { BusinessLocationDto } from './business-location.dto';
 import { CreateBusinessFollowUpDto } from './create-business-follow-up.dto';
@@ -179,11 +180,21 @@ export class CreateBusinessDto {
   leadSource?: string;
 
   @ApiPropertyOptional({
-    description: 'Tags associated with the business',
-    type: [String],
-    example: ['673a12345678901234567890'],
+    description: 'Comma-separated tag IDs',
+    example: '673a12345678901234567890,673a12345678901234567891',
+    type: String,
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
+    }
+
+    return value;
+  })
   @IsArray()
   @ArrayUnique()
   @IsMongoId({ each: true })

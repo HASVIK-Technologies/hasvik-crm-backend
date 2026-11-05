@@ -86,6 +86,10 @@ export class BusinessService {
         path: 'assignedTo',
         select: '_id fullName',
       },
+      {
+        path: 'tagIds',
+        select: '_id name color description',
+      },
     ]);
     
     this.logger.log(
@@ -412,6 +416,7 @@ export class BusinessService {
         )
         .populate('categoryId', '_id name')
         .populate('assignedTo', '_id fullName')
+        .populate('tagIds', '_id name color description')
         .lean()
         .exec();
 
