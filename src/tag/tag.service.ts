@@ -14,6 +14,7 @@ import { QueryTagDto } from './dto/query-tag.dto';
 
 import { MongoService } from 'src/mongo/mongo.service';
 import { TagAutocompleteDto } from './dto/tag-autocomplete.dto';
+import { EntityType } from '../mongo/enums';
 
 export enum TagEntityType {
   USER = 'USER',
@@ -316,124 +317,22 @@ export class TagService {
     return tags;
   }
 
-  /**
-   * GET /tags/:tagId/entities
-   * Get entities associated with a tag.
-   */
-  async findEntities(
-    tagId: string,
-    tenantId: string,
-    query: TagEntitiesQuery,
-  ) {
-    // await this.getTag(tagId, tenantId);
 
-    // const {
-    //   entityType,
-    //   page = 1,
-    //   limit = 10,
-    // } = query;
+  getSupportedEntityTypes() {
+    const labels: Record<EntityType, string> = {
+      [EntityType.BUSINESS]: 'Business',
+      [EntityType.FOLLOWUP]: 'Follow Up',
+      [EntityType.CATEGORY]: 'Category',
+      [EntityType.SUBSCRIPTION]: 'Subscription',
+      [EntityType.TENANT]: 'Tenant',
+      [EntityType.USER]: 'User',
+    };
 
-    // if (
-    //   entityType &&
-    //   !Object.values(TagEntityType).includes(entityType)
-    // ) {
-    //   throw new BadRequestException('Invalid entity type');
-    // }
-
-    // const assignmentFilter: Record<string, any> = {
-    //   tenantId: this.mongo.toObjectId(tenantId),
-    //   tagId: this.mongo.toObjectId(tagId),
-    // };
-
-    // if (entityType) {
-    //   assignmentFilter.entityType = entityType;
-    // }
-
-    // const skip = (page - 1) * limit;
-
-    // const [assignments, total] = await Promise.all([
-    //   this.mongo.models.TagAssignment.find(assignmentFilter)
-    //     .sort({ createdAt: -1 })
-    //     .skip(skip)
-    //     .limit(limit)
-    //     .lean(),
-
-    //   this.mongo.models.TagAssignment.countDocuments(
-    //     assignmentFilter,
-    //   ),
-    // ]);
-
-    // // Group entity IDs by entity type.
-    // const groupedIds = new Map<string, Types.ObjectId[]>();
-
-    // for (const assignment of assignments) {
-    //   const type = assignment.entityType;
-
-    //   if (!this.entityModelMap[type]) {
-    //     continue;
-    //   }
-
-    //   if (!groupedIds.has(type)) {
-    //     groupedIds.set(type, []);
-    //   }
-
-    //   groupedIds.get(type)!.push(assignment.entityId);
-    // }
-
-    // // Fetch corresponding entities.
-    // const entityResults = await Promise.all(
-    //   Array.from(groupedIds.entries()).map(
-    //     async ([type, entityIds]) => {
-    //       const modelName = this.entityModelMap[type];
-
-    //       const model = (this.mongo.models as any)[modelName];
-
-    //       if (!model) {
-    //         throw new Error(
-    //           `MongoDB model ${modelName} is not registered`,
-    //         );
-    //       }
-
-    //       const entities = await model.find({
-    //         _id: { $in: entityIds },
-    //         tenantId: this.mongo.toObjectId(tenantId),
-    //       }).lean();
-
-    //       return [type, entities] as const;
-    //     },
-    //   ),
-    // );
-
-    // const entityMap = new Map<string, any>();
-
-    // for (const [type, entities] of entityResults) {
-    //   for (const entity of entities) {
-    //     entityMap.set(
-    //       `${type}:${entity._id.toString()}`,
-    //       entity,
-    //     );
-    //   }
-    // }
-
-    // const data = assignments.map((assignment) => ({
-    //   entityType: assignment.entityType,
-    //   entityId: assignment.entityId,
-    //   entity:
-    //     entityMap.get(
-    //       `${assignment.entityType}:${assignment.entityId.toString()}`,
-    //     ) ?? null,
-    //   assignedAt: assignment.createdAt,
-    // }));
-
-    // return {
-    //   success: true,
-    //   data,
-    //   pagination: {
-    //     total,
-    //     page,
-    //     limit,
-    //     totalPages: Math.ceil(total / limit),
-    //   },
-    // };
+    return {
+      data: Object.values(EntityType).map((value) => ({
+        label: labels[value],
+        value,
+      })),
+    };
   }
 }

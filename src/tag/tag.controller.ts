@@ -39,6 +39,17 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class TagController {
   constructor(private readonly tagService: TagService) {}
 
+  @Get('entity-types')
+  @ApiOperation({
+    summary: 'Get all entity types supported by tags',
+  })
+  @ApiOperation({
+    description: 'List of supported tag entity types',
+  })
+  getSupportedEntityTypes() {
+    return this.tagService.getSupportedEntityTypes();
+  }
+
    // TAG AUTOCOMPLETE
   @Get('autocomplete')
   @ApiOperation({ summary: 'Autocomplete tags' })
@@ -138,23 +149,4 @@ export class TagController {
 
     return this.tagService.remove(id, tenantId, userId);
   }
-
-  /**
-   * Get entities associated with a tag
-   * GET /tags/:tagId/entities?entityType=BUSINESS&page=1&limit=10
-   */
-  // @Get(':tagId/entities')
-  // async findEntities(
-  //   @Param('tagId') tagId: string,
-  //   @Query() query: any,
-  //   @Req() req: any,
-  // ) {
-  //   const tenantId = req.user.tenantId;
-
-  //   return this.tagService.findEntities(
-  //     tagId,
-  //     tenantId,
-  //     query,
-  //   );
-  // }
 }
