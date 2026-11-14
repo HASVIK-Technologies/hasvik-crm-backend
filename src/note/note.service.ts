@@ -9,7 +9,7 @@ import { MongoService } from '../mongo/mongo.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { Note } from '../mongo/interfaces';
-import { NoteEntityType } from '../mongo/enums';
+import { EntityType, NoteEntityType } from '../mongo/enums';
 import { NoteFilterDto } from './dto/note-filter.dto';
 
 @Injectable()
@@ -207,9 +207,7 @@ export class NoteService {
         );
       }
 
-      filter.entityId = new Types.ObjectId(
-        entityId,
-      );
+      filter.entityId = this.mongo.toObjectId(entityId);
     }
 
     const notes = await this.mongo.models.note
@@ -338,6 +336,56 @@ export class NoteService {
 
     return {
       message: 'Note deleted successfully.',
+    };
+  }
+
+  async getBusinessFollowUpNotes(
+    tenantId: string,
+    businessId: string,
+  ) {
+    const tenantObjectId = this.mongo.toObjectId(tenantId);
+    const businessObjectId = this.mongo.toObjectId(businessId);
+
+    // 1. Get all active followups for business
+    const followUps = await this.mongo.models.followUp
+      .find({
+        tenantId: tenantObjectId,
+        businessId: businessObjectId,
+        isActive: true,
+      })
+      .select('_id')
+      .lean();
+
+    if (!followUps.length) {
+      return {
+        data: [],
+        total: 0,
+      };
+    }
+
+    // 2. Extract followup IDs
+    const followUpIds = followUps.map(
+      (followUp) => followUp._id,
+    );
+
+    // 3. Get notes associated with followups
+    const notes = await this.mongo.models.note
+    .find({
+        tenantId: tenantObjectId,
+        entityType: NoteEntityType.FOLLOW_UP,
+        entityId: { $in: followUpIds },
+      })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'entityId',
+        model: this.mongo.models.followUp,
+        select: 'status scheduledAt',
+      })// Populate followup details  
+      .lean();
+
+    return {
+      data: notes,
+      total: notes.length,
     };
   }
 }

@@ -56,6 +56,19 @@ export class NoteController {
     return await this.noteService.create(tenantId, dto, userId);
   }
 
+  @Get('business/:businessId/followups')
+  @UseGuards(JwtAuthGuard)
+  async getBusinessFollowUpNotes(
+    @Param('businessId') businessId: string,
+    @Req() req: any,
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.noteService.getBusinessFollowUpNotes(
+      tenantId,
+      businessId,
+    );
+  }
+
   @Get()
   @ApiOperation({
     summary: 'Get notes',
