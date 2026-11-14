@@ -67,12 +67,13 @@ export class BusinessService {
     }
 
     // Remove followUp before creating the Business document
-    const { followUp: followUpData, ...businessData } = data;
+    const { followUp: followUpData, status, ...businessData } = data;
   
     const business = new this.mongo.models.business({
       tenantId: this.mongo.toObjectId(tenantId),
       ...businessData,
-      createdBy: this.mongo.toObjectId(userId)
+      createdBy: this.mongo.toObjectId(userId),
+      status: status || BusinessStatus.NEW,
     });
 
     let createdBusiness = await business.save();

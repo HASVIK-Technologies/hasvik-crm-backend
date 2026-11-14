@@ -199,6 +199,16 @@ export class CreateBusinessDto {
   @ArrayUnique()
   @IsMongoId({ each: true })
   tagIds?: string[];
+
+  @ApiPropertyOptional({
+    enum: BusinessStatus,
+    example: BusinessStatus.NEW,
+    description: 'Current business status',
+  })
+  @IsOptional()
+  @IsEnum(BusinessStatus)
+  status?: BusinessStatus;
+
     
   @ApiPropertyOptional({
     type: CreateBusinessFollowUpDto,
