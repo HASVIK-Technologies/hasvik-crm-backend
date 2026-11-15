@@ -12,13 +12,6 @@ import {
 } from 'class-validator';
 
 export class GetBusinessFollowUpNotesQueryDto {
-  @ApiPropertyOptional({
-    example: '665c12345678901234567890',
-    description: 'Filter follow-ups by business ID',
-  })
-  @IsOptional()
-  @IsMongoId()
-  businessId?: string;
 
   @ApiPropertyOptional({
     example: '1',
