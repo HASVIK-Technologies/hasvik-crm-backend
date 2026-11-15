@@ -11,6 +11,7 @@ import { UpdateNoteDto } from './dto/update-note.dto';
 import { Note } from '../mongo/interfaces';
 import { EntityType, NoteEntityType } from '../mongo/enums';
 import { NoteFilterDto } from './dto/note-filter.dto';
+import { GetBusinessFollowUpNotesQueryDto } from './dto/get-business-followup-notes.dto';
 
 @Injectable()
 export class NoteService {
@@ -339,53 +340,153 @@ export class NoteService {
     };
   }
 
-  async getBusinessFollowUpNotes(
-    tenantId: string,
-    businessId: string,
-  ) {
-    const tenantObjectId = this.mongo.toObjectId(tenantId);
-    const businessObjectId = this.mongo.toObjectId(businessId);
+async getBusinessFollowUpNotes(
+  tenantId: string,
+  businessId: string,
+  query: GetBusinessFollowUpNotesQueryDto
+) {
+  const tenantObjectId = this.mongo.toObjectId(tenantId);
+  const businessObjectId = this.mongo.toObjectId(businessId);
 
-    // 1. Get all active followups for business
-    const followUps = await this.mongo.models.followUp
-      .find({
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const [result] = await this.mongo.models.followUp.aggregate([
+    // 1. Filter active followups
+    {
+      $match: {
         tenantId: tenantObjectId,
         businessId: businessObjectId,
         isActive: true,
-      })
-      .select('_id')
-      .lean();
+      },
+    },
 
-    if (!followUps.length) {
-      return {
-        data: [],
-        total: 0,
-      };
-    }
+    // 2. Select required followup fields
+    {
+      $project: {
+        _id: 1,
+        status: 1,
+        scheduledAt: 1,
+      },
+    },
 
-    // 2. Extract followup IDs
-    const followUpIds = followUps.map(
-      (followUp) => followUp._id,
-    );
+    // 3. Fetch notes related to followups
+    {
+      $lookup: {
+        from: "notes",
+        localField: '_id',
+        foreignField: 'entityId',
+        pipeline: [
+          {
+            $match: {
+              tenantId: tenantObjectId,
+              entityType: NoteEntityType.FOLLOW_UP,
+            },
+          },
+        ],
+        as: 'notes',
+      },
+    },
 
-    // 3. Get notes associated with followups
-    const notes = await this.mongo.models.note
-    .find({
-        tenantId: tenantObjectId,
-        entityType: NoteEntityType.FOLLOW_UP,
-        entityId: { $in: followUpIds },
-      })
-      .sort({ createdAt: -1 })
-      .populate({
-        path: 'entityId',
-        model: this.mongo.models.followUp,
-        select: 'status scheduledAt',
-      })// Populate followup details  
-      .lean();
+    // 4. Flatten notes
+    {
+      $unwind: '$notes',
+    },
 
-    return {
-      data: notes,
-      total: notes.length,
-    };
-  }
+    // 5. Restructure response
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: [
+            '$notes',
+            {
+              entity: {
+                _id: '$_id',
+                status: '$status',
+                scheduledAt: '$scheduledAt',
+              },
+            },
+          ],
+        },
+      },
+    },
+
+    // 6. Remove original entityId
+    {
+      $project: {
+        entityId: 0,
+      },
+    },
+
+    // 7. Pagination and total count
+    {
+      $facet: {
+        data: [
+          {
+            $sort: {
+              createdAt: -1,
+              _id: -1,
+            },
+          },
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
+
+          // Populate createdBy only for paginated notes
+          {
+            $lookup: {
+              from: "users",
+              localField: 'createdBy',
+              foreignField: '_id',
+              pipeline: [
+                {
+                  $project: {
+                    _id: 1,
+                    fullName: 1,
+                    email: 1,
+                  },
+                },
+              ],
+              as: 'createdBy',
+            },
+          },
+          {
+            $unwind: {
+              path: '$createdBy',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+        ],
+
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
+    },
+
+    // 8. Format final response
+    {
+      $project: {
+        data: 1,
+        total: {
+          $ifNull: [
+            { $arrayElemAt: ['$totalCount.count', 0] },
+            0,
+          ],
+        },
+      },
+    },
+  ]);
+
+  return {
+    data: result?.data ?? [],
+    total: result?.total ?? 0
+  };
+}
 }

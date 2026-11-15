@@ -49,7 +49,14 @@ export const NoteSchema : Schema<Note> = new Schema<Note>(
 
 // Fetch notes for a particular entity efficiently
 NoteSchema.index({
+  tenantId: 1,
   entityType: 1,
   entityId: 1,
   createdAt: -1,
+});
+
+NoteSchema.index({
+  entityId: 1,
+  tenantId: 1,
+  entityType: 1,
 });

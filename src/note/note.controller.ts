@@ -22,6 +22,7 @@ import { NoteService } from './note.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { NoteFilterDto } from './dto/note-filter.dto';
+import { GetBusinessFollowUpNotesQueryDto } from './dto/get-business-followup-notes.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -60,12 +61,14 @@ export class NoteController {
   @UseGuards(JwtAuthGuard)
   async getBusinessFollowUpNotes(
     @Param('businessId') businessId: string,
+    @Query() query: GetBusinessFollowUpNotesQueryDto,
     @Req() req: any,
   ) {
     const tenantId = req.user.tenantId;
     return this.noteService.getBusinessFollowUpNotes(
       tenantId,
       businessId,
+      query
     );
   }
 
